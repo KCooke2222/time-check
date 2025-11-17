@@ -89,44 +89,31 @@ def build_hierarchical_section_summary(section_totals, user):
 def generate_weekly_report(user, week_date):
     """
     Generate a weekly report for a specific week.
+    This is a convenience wrapper around generate_range_report for a single week.
 
     Args:
         user: User model instance
         week_date: datetime - any date within the target week
 
     Returns:
-        dict with report data:
-        {
-            'week_start': datetime,
-            'week_end': datetime,
-            'events': [list of event dicts],
-            'category_summary': {category_id: {'name': str, 'raw_hours': float, 'intensity_hours': float}},
-            'section_summary': {section_id: {'name': str, 'raw_hours': float, 'intensity_hours': float}},
-            'totals': {'raw_hours': float, 'intensity_hours': float}
-        }
+        dict with report data - same format as range report but for single week
     """
     week_start = get_week_start(week_date)
     week_end = get_week_end(week_date)
 
-    # Get all events for the week
+    # Use range report for summaries (ensures consistent totals logic)
+    range_report = generate_range_report(user, week_start, week_end)
+
+    # Get event details for weekly view (range report doesn't include event list)
     events = Event.query.filter(
         Event.user_id == user.id,
         Event.start_time >= week_start,
         Event.start_time <= week_end
     ).order_by(Event.start_time).all()
 
-    # Build event list with intensity calculations
     event_list = []
-    category_totals = {}
-    section_totals = {}
-    total_raw_hours = 0.0
-    total_intensity_hours = 0.0
-
     for event in events:
-        # Calculate intensity hours
         intensity_hours = calculate_intensity_hours(event, user.settings)
-
-        # Build event dict
         event_dict = {
             'id': event.id,
             'title': event.title,
@@ -142,48 +129,35 @@ def generate_weekly_report(user, week_date):
         }
         event_list.append(event_dict)
 
-        # Accumulate totals
-        total_raw_hours += event.duration_hours
-        total_intensity_hours += intensity_hours
+    # Convert range report format to weekly format
+    # Range report has _total suffix, weekly doesn't
+    category_summary = {}
+    for cat_id, cat_data in range_report['category_summary'].items():
+        category_summary[cat_id] = {
+            'name': cat_data['name'],
+            'section_name': cat_data['section_name'],
+            'raw_hours': cat_data['raw_hours_total'],
+            'intensity_hours': cat_data['intensity_hours_total']
+        }
 
-        # Category totals
-        if event.category:
-            cat_id = event.category.id
-            if cat_id not in category_totals:
-                category_totals[cat_id] = {
-                    'name': event.category.name,
-                    'section_name': event.category.section.name if event.category.section else None,
-                    'raw_hours': 0.0,
-                    'intensity_hours': 0.0
-                }
-            category_totals[cat_id]['raw_hours'] += event.duration_hours
-            category_totals[cat_id]['intensity_hours'] += intensity_hours
-
-            # Section totals (direct hours only)
-            sec_id = event.category.section_id
-            if sec_id:  # Only if category has a section
-                if sec_id not in section_totals:
-                    section_totals[sec_id] = {
-                        'name': event.category.section.name if event.category.section else None,
-                        'raw_hours': 0.0,
-                        'intensity_hours': 0.0
-                    }
-                section_totals[sec_id]['raw_hours'] += event.duration_hours
-                section_totals[sec_id]['intensity_hours'] += intensity_hours
-
-    # Build hierarchical section summary
-    hierarchical_sections = build_hierarchical_section_summary(section_totals, user)
+    section_summary = {}
+    for sec_id, sec_data in range_report['section_summary'].items():
+        section_summary[sec_id] = {
+            'name': sec_data['name'],
+            'raw_hours': sec_data['raw_hours_total'],
+            'intensity_hours': sec_data['intensity_hours_total']
+        }
 
     return {
         'week_start': week_start.isoformat(),
         'week_end': week_end.isoformat(),
         'events': event_list,
-        'category_summary': category_totals,
-        'section_summary': section_totals,  # Flat summary (backward compat)
-        'section_hierarchy': hierarchical_sections,  # NEW: Hierarchical tree with aggregation
+        'category_summary': category_summary,
+        'section_summary': section_summary,
+        'section_hierarchy': range_report['section_hierarchy'],
         'totals': {
-            'raw_hours': total_raw_hours,
-            'intensity_hours': total_intensity_hours
+            'raw_hours': range_report['totals']['raw_hours_total'],
+            'intensity_hours': range_report['totals']['intensity_hours_total']
         }
     }
 
@@ -246,11 +220,13 @@ def generate_range_report(user, start_date, end_date):
         event_week_start = get_week_start(event.start_time)
         intensity_hours = calculate_intensity_hours(event, user.settings)
 
-        # Update totals
-        total_raw_hours += event.duration_hours
-        total_intensity_hours += intensity_hours
+        
 
         if event.category:
+            # Update totals only if event is categorized
+            total_raw_hours += event.duration_hours
+            total_intensity_hours += intensity_hours
+
             cat_id = event.category.id
 
             # Track category presence across weeks
