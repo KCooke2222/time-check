@@ -127,7 +127,10 @@ def sync_user_calendars(user, lookback_days=7):
 
 def fetch_calendar_events(service, calendar_id, start_time, end_time):
     """
-    Fetch events from a specific Google Calendar.
+    Fetch events from a specific Google Calendar with pagination.
+
+    Google Calendar API limits results to 250 by default (max 2500).
+    This function handles pagination to fetch all events in the range.
 
     Args:
         service: Google Calendar API service
@@ -138,15 +141,28 @@ def fetch_calendar_events(service, calendar_id, start_time, end_time):
     Returns:
         list of event dicts from Google Calendar API
     """
-    events_result = service.events().list(
-        calendarId=calendar_id,
-        timeMin=start_time.isoformat() + 'Z',
-        timeMax=end_time.isoformat() + 'Z',
-        singleEvents=True,
-        orderBy='startTime'
-    ).execute()
+    all_events = []
+    page_token = None
 
-    return events_result.get('items', [])
+    while True:
+        events_result = service.events().list(
+            calendarId=calendar_id,
+            timeMin=start_time.isoformat() + 'Z',
+            timeMax=end_time.isoformat() + 'Z',
+            singleEvents=True,
+            orderBy='startTime',
+            maxResults=2500,  # Maximum allowed
+            pageToken=page_token
+        ).execute()
+
+        all_events.extend(events_result.get('items', []))
+
+        page_token = events_result.get('nextPageToken')
+        if not page_token:
+            break
+
+    logger.info(f"Fetched {len(all_events)} events from calendar {calendar_id}")
+    return all_events
 
 
 def process_calendar_events(user, calendar, google_events, categories, start_time, end_time):
