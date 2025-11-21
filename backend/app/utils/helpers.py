@@ -1,39 +1,125 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import pytz
 
-def get_week_start(date):
+
+def parse_google_time(rfc3339_str):
     """
-    Get the start of the week (Sunday at 00:00:00) for a given date.
+    Parse RFC3339 string (Google Calendar format) to Unix timestamp.
 
     Args:
-        date: datetime object or date object
+        rfc3339_str: string in RFC3339 format (e.g., "2011-06-03T10:00:00-07:00")
 
     Returns:
-        datetime object representing Sunday at 00:00:00
+        int: Unix timestamp (seconds since epoch)
     """
-    if isinstance(date, datetime):
-        date = date.date()
-
-    # Get the day of the week (0=Monday, 6=Sunday in Python)
-    # We want Sunday to be the start of the week
-    days_since_sunday = (date.weekday() + 1) % 7
-    week_start = date - timedelta(days=days_since_sunday)
-
-    return datetime.combine(week_start, datetime.min.time())
+    dt = datetime.fromisoformat(rfc3339_str.replace('Z', '+00:00'))
+    return int(dt.timestamp())
 
 
-def get_week_end(date):
+def to_google_time(unix_ts):
     """
-    Get the end of the week (Saturday at 23:59:59) for a given date.
+    Convert Unix timestamp to RFC3339 string with UTC timezone for Google API.
 
     Args:
-        date: datetime object or date object
+        unix_ts: int Unix timestamp (seconds since epoch)
 
     Returns:
-        datetime object representing Saturday at 23:59:59
+        str: RFC3339 formatted string with UTC timezone
     """
-    week_start = get_week_start(date)
-    week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
-    return week_end
+    dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
+    return dt.isoformat()
+
+
+def parse_user_date(date_str, user_timezone):
+    """
+    Parse YYYY-MM-DD string as midnight in user's timezone, return Unix timestamp.
+
+    Args:
+        date_str: string in YYYY-MM-DD format
+        user_timezone: string timezone name (e.g., "America/New_York")
+
+    Returns:
+        int: Unix timestamp (seconds since epoch)
+    """
+    try:
+        tz = pytz.timezone(user_timezone)
+        naive_dt = datetime.strptime(date_str, '%Y-%m-%d')
+        localized_dt = tz.localize(naive_dt)
+        return int(localized_dt.timestamp())
+    except (ValueError, TypeError, pytz.exceptions.UnknownTimeZoneError):
+        return None
+
+
+def format_timestamp_iso(unix_ts):
+    """
+    Convert Unix timestamp to ISO string for JSON responses.
+
+    Args:
+        unix_ts: int Unix timestamp (seconds since epoch)
+
+    Returns:
+        str: ISO 8601 formatted string with UTC timezone
+    """
+    dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
+    return dt.isoformat()
+
+
+def get_week_start(unix_ts, user_timezone):
+    """
+    Get the start of the week (Sunday at 00:00:00) in user's timezone.
+
+    Args:
+        unix_ts: int Unix timestamp (seconds since epoch)
+        user_timezone: string timezone name (e.g., "America/New_York")
+
+    Returns:
+        int: Unix timestamp representing Sunday at 00:00:00 in user timezone
+    """
+    try:
+        tz = pytz.timezone(user_timezone)
+        # Convert Unix timestamp to datetime in user's timezone
+        dt = datetime.fromtimestamp(unix_ts, tz=tz)
+
+        # Get the day of the week (0=Monday, 6=Sunday in Python)
+        # We want Sunday to be the start of the week
+        days_since_sunday = (dt.weekday() + 1) % 7
+
+        # Calculate Sunday at 00:00:00
+        week_start_dt = dt - timedelta(days=days_since_sunday)
+        week_start_dt = week_start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        return int(week_start_dt.timestamp())
+    except (pytz.exceptions.UnknownTimeZoneError, ValueError):
+        # Fallback to UTC if timezone is invalid
+        return get_week_start(unix_ts, 'UTC')
+
+
+def get_week_end(unix_ts, user_timezone):
+    """
+    Get the end of the week (Sunday 00:00:00 of next week) in user's timezone.
+    This returns the exclusive end boundary - events starting at this time are NOT included.
+
+    Args:
+        unix_ts: int Unix timestamp (seconds since epoch)
+        user_timezone: string timezone name (e.g., "America/New_York")
+
+    Returns:
+        int: Unix timestamp representing Sunday at 00:00:00 of next week in user timezone
+    """
+    try:
+        week_start_ts = get_week_start(unix_ts, user_timezone)
+        tz = pytz.timezone(user_timezone)
+
+        # Convert week start to datetime in user's timezone
+        week_start_dt = datetime.fromtimestamp(week_start_ts, tz=tz)
+
+        # Add 7 days to get to next Sunday 00:00:00 (exclusive end boundary)
+        week_end_dt = week_start_dt + timedelta(days=7)
+
+        return int(week_end_dt.timestamp())
+    except (pytz.exceptions.UnknownTimeZoneError, ValueError):
+        # Fallback to UTC if timezone is invalid
+        return get_week_end(unix_ts, 'UTC')
 
 
 def calculate_intensity_hours(event, user_settings):

@@ -3,13 +3,13 @@ Google Calendar sync service.
 Pulls events from Google Calendar and syncs with local database.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from app import db
 from app.models import User, Calendar, Event, SyncLog, Section
 from app.services.category_matcher import find_category, get_category_priority_order
-from app.utils.helpers import google_color_id_to_name, should_filter_event
+from app.utils.helpers import google_color_id_to_name, should_filter_event, parse_google_time, to_google_time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,9 +55,9 @@ def sync_user_calendars(user, lookback_days=7):
         logger.warning(f"User {user.id} has no settings, skipping sync")
         return None
 
-    # Get date range
-    end_time = datetime.utcnow()
-    start_time = end_time - timedelta(days=lookback_days)
+    # Get date range as Unix timestamps
+    end_time = int(datetime.now(timezone.utc).timestamp())
+    start_time = end_time - (lookback_days * 86400)  # 86400 seconds per day
 
     # Get calendar service
     try:
@@ -135,8 +135,8 @@ def fetch_calendar_events(service, calendar_id, start_time, end_time):
     Args:
         service: Google Calendar API service
         calendar_id: str - Google Calendar ID
-        start_time: datetime - start of date range
-        end_time: datetime - end of date range
+        start_time: int - Unix timestamp for start of date range
+        end_time: int - Unix timestamp for end of date range
 
     Returns:
         list of event dicts from Google Calendar API
@@ -145,10 +145,14 @@ def fetch_calendar_events(service, calendar_id, start_time, end_time):
     page_token = None
 
     while True:
+        # Convert Unix timestamps to RFC3339 format for Google Calendar API
+        time_min = to_google_time(start_time)
+        time_max = to_google_time(end_time)
+
         events_result = service.events().list(
             calendarId=calendar_id,
-            timeMin=start_time.isoformat() + 'Z',
-            timeMax=end_time.isoformat() + 'Z',
+            timeMin=time_min,
+            timeMax=time_max,
             singleEvents=True,
             orderBy='startTime',
             maxResults=2500,  # Maximum allowed
@@ -174,8 +178,8 @@ def process_calendar_events(user, calendar, google_events, categories, start_tim
         calendar: Calendar model instance
         google_events: list of event dicts from Google API
         categories: list of Category instances (priority ordered)
-        start_time: datetime - start of sync range
-        end_time: datetime - end of sync range
+        start_time: int - Unix timestamp for start of sync range
+        end_time: int - Unix timestamp for end of sync range
 
     Returns:
         dict with sync statistics: {'added': int, 'updated': int, 'deleted': int}
@@ -256,11 +260,12 @@ def parse_google_event(gevent, user, calendar, categories):
     if 'dateTime' not in start or 'dateTime' not in end:
         return None
 
-    start_time = datetime.fromisoformat(start['dateTime'].replace('Z', '+00:00'))
-    end_time = datetime.fromisoformat(end['dateTime'].replace('Z', '+00:00'))
+    # Parse datetimes to Unix timestamps
+    start_time = parse_google_time(start['dateTime'])
+    end_time = parse_google_time(end['dateTime'])
 
     # Calculate duration in hours
-    duration = (end_time - start_time).total_seconds() / 3600
+    duration = (end_time - start_time) / 3600  # Convert seconds to hours
 
     # Filter events based on user settings
     if should_filter_event(duration, user.settings):
@@ -286,13 +291,14 @@ def parse_google_event(gevent, user, calendar, categories):
         'duration_hours': duration,
         'color': color_name,
         'category_id': matched_category.id if matched_category else None,
-        'last_synced': datetime.utcnow()
+        'last_synced': int(datetime.now(timezone.utc).timestamp())
     }
 
 
 def has_event_changed(existing_event, new_event_data):
     """
     Check if an event has changed compared to new data.
+    Uses direct integer comparisons for Unix timestamps.
 
     Args:
         existing_event: Event model instance
@@ -301,13 +307,13 @@ def has_event_changed(existing_event, new_event_data):
     Returns:
         bool: True if event has changed
     """
-    return (
-        existing_event.title != new_event_data['title'] or
-        existing_event.start_time != new_event_data['start_time'] or
-        existing_event.end_time != new_event_data['end_time'] or
-        existing_event.color != new_event_data['color'] or
-        existing_event.category_id != new_event_data['category_id']
-    )
+    title_changed = existing_event.title != new_event_data['title']
+    start_changed = existing_event.start_time != new_event_data['start_time']
+    end_changed = existing_event.end_time != new_event_data['end_time']
+    color_changed = existing_event.color != new_event_data['color']
+    category_changed = existing_event.category_id != new_event_data['category_id']
+
+    return title_changed or start_changed or end_changed or color_changed or category_changed
 
 
 def update_event(event, new_data):
@@ -324,4 +330,4 @@ def update_event(event, new_data):
     event.duration_hours = new_data['duration_hours']
     event.color = new_data['color']
     event.category_id = new_data['category_id']
-    event.last_synced = datetime.utcnow()
+    event.last_synced = int(datetime.now(timezone.utc).timestamp())

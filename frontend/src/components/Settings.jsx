@@ -21,6 +21,7 @@ function Settings() {
   const [blueMultiplier, setBlueMultiplier] = useState(0.75);
   const [greenMultiplier, setGreenMultiplier] = useState(1.0);
   const [redMultiplier, setRedMultiplier] = useState(1.25);
+  const [timezone, setTimezone] = useState('UTC');
 
   useEffect(() => {
     loadSettings();
@@ -37,6 +38,7 @@ function Settings() {
       setBlueMultiplier(data.intensity_multipliers.blue);
       setGreenMultiplier(data.intensity_multipliers.green);
       setRedMultiplier(data.intensity_multipliers.red);
+      setTimezone(data.timezone || 'UTC');
     } catch (err) {
       console.error('Failed to load settings:', err);
     } finally {
@@ -94,6 +96,7 @@ function Settings() {
           green: parseFloat(greenMultiplier),
           red: parseFloat(redMultiplier),
         },
+        timezone: timezone,
       });
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
       await loadSettings();
@@ -253,6 +256,39 @@ function Settings() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Timezone
+                </h3>
+                <div className="max-w-md">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Timezone (for week boundaries)
+                  </label>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">America/New_York (EST/EDT)</option>
+                    <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                    <option value="America/Denver">America/Denver (MST/MDT)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                    <option value="America/Phoenix">America/Phoenix (MST - no DST)</option>
+                    <option value="America/Toronto">America/Toronto (EST/EDT)</option>
+                    <option value="Europe/London">Europe/London (GMT/BST)</option>
+                    <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                    <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                    <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+                    <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-2">
+                    This determines when weeks start/end in reports (Sunday 00:00:00 to Saturday 23:59:59 in your timezone).
+                  </p>
                 </div>
               </div>
 

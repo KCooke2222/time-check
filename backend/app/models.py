@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask_login import UserMixin
 from app import db
 import json
+
 
 class User(UserMixin, db.Model):
     """User model"""
@@ -10,7 +11,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     google_oauth_tokens = db.Column(db.Text)  # JSON string
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.Integer, default=lambda: int(datetime.now(timezone.utc).timestamp()))
 
     # Relationships
     settings = db.relationship('UserSettings', backref='user', uselist=False, cascade='all, delete-orphan')
@@ -43,6 +44,7 @@ class UserSettings(db.Model):
     min_event_duration_hours = db.Column(db.Float, default=0.0)
     max_event_duration_hours = db.Column(db.Float, default=16.0)
     intensity_multipliers_json = db.Column(db.Text)  # JSON: {"blue": 0.75, "green": 1.0, "red": 1.25}
+    timezone = db.Column(db.String(50), default='UTC')
 
     def __init__(self, **kwargs):
         super(UserSettings, self).__init__(**kwargs)
@@ -159,12 +161,12 @@ class Event(db.Model):
     calendar_id = db.Column(db.Integer, db.ForeignKey('calendars.id'), nullable=False)
     event_id = db.Column(db.String(255), nullable=False)  # Google Calendar event ID
     title = db.Column(db.String(500), nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False, index=True)
-    end_time = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.Integer, nullable=False, index=True)  # Unix timestamp
+    end_time = db.Column(db.Integer, nullable=False)  # Unix timestamp
     duration_hours = db.Column(db.Float, nullable=False)
     color = db.Column(db.String(50))  # e.g., "blue", "green", "red"
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
-    last_synced = db.Column(db.DateTime, default=datetime.utcnow)
+    last_synced = db.Column(db.Integer, default=lambda: int(datetime.now(timezone.utc).timestamp()))
 
     __table_args__ = (
         db.UniqueConstraint('calendar_id', 'event_id', name='unique_calendar_event'),
@@ -181,9 +183,9 @@ class SyncLog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    sync_time = db.Column(db.DateTime, default=datetime.utcnow)
-    date_range_start = db.Column(db.DateTime, nullable=False)
-    date_range_end = db.Column(db.DateTime, nullable=False)
+    sync_time = db.Column(db.Integer, default=lambda: int(datetime.now(timezone.utc).timestamp()))
+    date_range_start = db.Column(db.Integer, nullable=False)
+    date_range_end = db.Column(db.Integer, nullable=False)
     events_added = db.Column(db.Integer, default=0)
     events_updated = db.Column(db.Integer, default=0)
     events_deleted = db.Column(db.Integer, default=0)

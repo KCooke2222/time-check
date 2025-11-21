@@ -25,7 +25,8 @@ def get_settings():
     return jsonify({
         'min_event_duration_hours': settings.min_event_duration_hours,
         'max_event_duration_hours': settings.max_event_duration_hours,
-        'intensity_multipliers': settings.get_multipliers()
+        'intensity_multipliers': settings.get_multipliers(),
+        'timezone': settings.timezone
     })
 
 
@@ -83,6 +84,13 @@ def update_settings():
 
         settings.set_multipliers(multipliers)
 
+    # Update timezone
+    if 'timezone' in data:
+        timezone = data['timezone']
+        if not isinstance(timezone, str) or not timezone:
+            return jsonify({'error': 'timezone must be a non-empty string'}), 400
+        settings.timezone = timezone
+
     db.session.commit()
 
     return jsonify({
@@ -90,7 +98,8 @@ def update_settings():
         'settings': {
             'min_event_duration_hours': settings.min_event_duration_hours,
             'max_event_duration_hours': settings.max_event_duration_hours,
-            'intensity_multipliers': settings.get_multipliers()
+            'intensity_multipliers': settings.get_multipliers(),
+            'timezone': settings.timezone
         }
     })
 

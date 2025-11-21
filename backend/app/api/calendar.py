@@ -8,6 +8,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Calendar
 from app.services.calendar_sync import sync_user_calendars
+from app.utils.helpers import format_timestamp_iso
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 import logging
@@ -173,7 +174,7 @@ def manual_sync():
                 'events_added': sync_log.events_added,
                 'events_updated': sync_log.events_updated,
                 'events_deleted': sync_log.events_deleted,
-                'sync_time': sync_log.sync_time.isoformat(),
+                'sync_time': format_timestamp_iso(sync_log.sync_time),
                 'lookback_days': lookback_days
             }
         })
@@ -200,8 +201,8 @@ def sync_stats():
     total_events = Event.query.filter_by(user_id=current_user.id).count()
 
     return jsonify({
-        'oldest_event_date': oldest_event.start_time.isoformat() if oldest_event else None,
-        'latest_sync_time': latest_sync.sync_time.isoformat() if latest_sync else None,
+        'oldest_event_date': format_timestamp_iso(oldest_event.start_time) if oldest_event else None,
+        'latest_sync_time': format_timestamp_iso(latest_sync.sync_time) if latest_sync else None,
         'total_events': total_events,
         'last_sync_stats': {
             'events_added': latest_sync.events_added if latest_sync else 0,
