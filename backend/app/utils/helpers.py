@@ -50,18 +50,25 @@ def parse_user_date(date_str, user_timezone):
         return None
 
 
-def format_timestamp_iso(unix_ts):
+def format_timestamp_iso(unix_ts, user_timezone='UTC'):
     """
     Convert Unix timestamp to ISO string for JSON responses.
 
     Args:
         unix_ts: int Unix timestamp (seconds since epoch)
+        user_timezone: string timezone name (e.g., "America/New_York")
 
     Returns:
-        str: ISO 8601 formatted string with UTC timezone
+        str: ISO 8601 formatted string in specified timezone
     """
-    dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
-    return dt.isoformat()
+    try:
+        tz = pytz.timezone(user_timezone)
+        dt = datetime.fromtimestamp(unix_ts, tz=tz)
+        return dt.isoformat()
+    except pytz.exceptions.UnknownTimeZoneError:
+        # Fallback to UTC if timezone is invalid
+        dt = datetime.fromtimestamp(unix_ts, tz=timezone.utc)
+        return dt.isoformat()
 
 
 def get_week_start(unix_ts, user_timezone):

@@ -168,13 +168,16 @@ def manual_sync():
         if not sync_log:
             return jsonify({'error': 'Sync failed'}), 500
 
+        # Get user timezone for timestamp formatting
+        user_timezone = current_user.settings.timezone if current_user.settings else 'UTC'
+
         return jsonify({
             'message': 'Sync completed successfully',
             'stats': {
                 'events_added': sync_log.events_added,
                 'events_updated': sync_log.events_updated,
                 'events_deleted': sync_log.events_deleted,
-                'sync_time': format_timestamp_iso(sync_log.sync_time),
+                'sync_time': format_timestamp_iso(sync_log.sync_time, user_timezone),
                 'lookback_days': lookback_days
             }
         })
@@ -191,6 +194,9 @@ def sync_stats():
     from app.models import Event, SyncLog
     from sqlalchemy import func
 
+    # Get user timezone for timestamp formatting
+    user_timezone = current_user.settings.timezone if current_user.settings else 'UTC'
+
     # Get oldest event
     oldest_event = Event.query.filter_by(user_id=current_user.id).order_by(Event.start_time.asc()).first()
 
@@ -201,8 +207,8 @@ def sync_stats():
     total_events = Event.query.filter_by(user_id=current_user.id).count()
 
     return jsonify({
-        'oldest_event_date': format_timestamp_iso(oldest_event.start_time) if oldest_event else None,
-        'latest_sync_time': format_timestamp_iso(latest_sync.sync_time) if latest_sync else None,
+        'oldest_event_date': format_timestamp_iso(oldest_event.start_time, user_timezone) if oldest_event else None,
+        'latest_sync_time': format_timestamp_iso(latest_sync.sync_time, user_timezone) if latest_sync else None,
         'total_events': total_events,
         'last_sync_stats': {
             'events_added': latest_sync.events_added if latest_sync else 0,

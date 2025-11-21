@@ -89,14 +89,14 @@ def build_hierarchical_section_summary(section_totals, user):
 def generate_weekly_report(user, week_date_unix_ts):
     """
     Generate a weekly report for a specific week.
-    This is a convenience wrapper around generate_range_report for a single week.
+    Just a thin wrapper around generate_range_report for a single week.
 
     Args:
         user: User model instance
         week_date_unix_ts: int - Unix timestamp for any date within the target week
 
     Returns:
-        dict with report data - same format as range report but for single week
+        dict with report data - same as range report (frontend handles both formats)
     """
     # Get user timezone for week boundary calculations
     user_timezone = user.settings.timezone if user.settings else 'UTC'
@@ -104,70 +104,18 @@ def generate_weekly_report(user, week_date_unix_ts):
     week_start = get_week_start(week_date_unix_ts, user_timezone)
     week_end = get_week_end(week_date_unix_ts, user_timezone)
 
-    # Use range report for summaries (ensures consistent totals logic)
-    # Pass skip_normalize=True to avoid double-normalization
-    range_report = generate_range_report(user, week_start, week_end, skip_normalize=True)
+    # Just call range report - it's already a 1-week range
+    # Frontend handles both week_start/week_end and date_range_start/date_range_end
+    report = generate_range_report(user, week_start, week_end, skip_normalize=True, include_events=True)
 
-    # Get event details for weekly view (range report doesn't include event list)
-    # Note: week_end is exclusive (Sunday 00:00:00 of next week)
-    events = Event.query.filter(
-        Event.user_id == user.id,
-        Event.start_time >= week_start,
-        Event.start_time < week_end
-    ).order_by(Event.start_time).all()
+    # Rename top-level keys for backward compatibility
+    report['week_start'] = report.pop('date_range_start')
+    report['week_end'] = report.pop('date_range_end')
 
-    event_list = []
-    for event in events:
-        intensity_hours = calculate_intensity_hours(event, user.settings)
-        event_dict = {
-            'id': event.id,
-            'title': event.title,
-            'start_time': format_timestamp_iso(event.start_time),
-            'end_time': format_timestamp_iso(event.end_time),
-            'duration_hours': event.duration_hours,
-            'intensity_hours': intensity_hours,
-            'color': event.color,
-            'category_name': event.category.name if event.category else 'Uncategorized',
-            'category_id': event.category_id,
-            'section_name': event.category.section.name if (event.category and event.category.section) else None,
-            'section_id': event.category.section_id if event.category else None
-        }
-        event_list.append(event_dict)
-
-    # Convert range report format to weekly format
-    # Range report has _total suffix, weekly doesn't
-    category_summary = {}
-    for cat_id, cat_data in range_report['category_summary'].items():
-        category_summary[cat_id] = {
-            'name': cat_data['name'],
-            'section_name': cat_data['section_name'],
-            'raw_hours': cat_data['raw_hours_total'],
-            'intensity_hours': cat_data['intensity_hours_total']
-        }
-
-    section_summary = {}
-    for sec_id, sec_data in range_report['section_summary'].items():
-        section_summary[sec_id] = {
-            'name': sec_data['name'],
-            'raw_hours': sec_data['raw_hours_total'],
-            'intensity_hours': sec_data['intensity_hours_total']
-        }
-
-    return {
-        'week_start': format_timestamp_iso(week_start),
-        'week_end': format_timestamp_iso(week_end),
-        'events': event_list,
-        'category_summary': category_summary,
-        'section_summary': section_summary,
-        'section_hierarchy': range_report['section_hierarchy'],
-        'totals': {
-            'raw_hours': range_report['totals']['raw_hours_total'],
-            'intensity_hours': range_report['totals']['intensity_hours_total']
-        }
-    }
+    return report
 
 
-def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False):
+def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False, include_events=False):
     """
     Generate a date range report aggregating multiple weeks.
 
@@ -176,6 +124,7 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
         start_unix_ts: int - Unix timestamp for range start
         end_unix_ts: int - Unix timestamp for range end
         skip_normalize: bool - If True, use timestamps as-is without normalizing to week boundaries
+        include_events: bool - If True, include full event list in response
 
     Returns:
         dict with report data:
@@ -183,6 +132,7 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
             'date_range_start': str (ISO format),
             'date_range_end': str (ISO format),
             'weeks_count': int,
+            'events': [...] (if include_events=True),
             'category_summary': {category_id: {
                 'name': str,
                 'raw_hours_total': float,
@@ -217,7 +167,7 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
         Event.user_id == user.id,
         Event.start_time >= range_start,
         Event.start_time < range_end
-    ).all()
+    ).order_by(Event.start_time).all()
 
     # Calculate number of weeks (Unix timestamps are in seconds)
     # Since range_end is exclusive (next Sunday 00:00:00), we don't need the +1
@@ -332,9 +282,29 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
     collect_all(hierarchical_sections)
     add_week_stats(all_hierarchy_sections)
 
-    return {
-        'date_range_start': format_timestamp_iso(range_start),
-        'date_range_end': format_timestamp_iso(range_end),
+    # Build event list if requested
+    event_list = []
+    if include_events:
+        for event in events:
+            intensity_hours = calculate_intensity_hours(event, user.settings)
+            event_dict = {
+                'id': event.id,
+                'title': event.title,
+                'start_time': format_timestamp_iso(event.start_time, user_timezone),
+                'end_time': format_timestamp_iso(event.end_time, user_timezone),
+                'duration_hours': event.duration_hours,
+                'intensity_hours': intensity_hours,
+                'color': event.color,
+                'category_name': event.category.name if event.category else 'Uncategorized',
+                'category_id': event.category_id,
+                'section_name': event.category.section.name if (event.category and event.category.section) else None,
+                'section_id': event.category.section_id if event.category else None
+            }
+            event_list.append(event_dict)
+
+    result = {
+        'date_range_start': format_timestamp_iso(range_start, user_timezone),
+        'date_range_end': format_timestamp_iso(range_end, user_timezone),
         'weeks_count': weeks_count,
         'category_summary': category_totals,
         'section_summary': section_totals,  # Flat summary (backward compat)
@@ -346,6 +316,12 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
             'intensity_hours_avg_per_week': total_intensity_hours / weeks_count if weeks_count > 0 else 0.0
         }
     }
+
+    # Add events if requested
+    if include_events:
+        result['events'] = event_list
+
+    return result
 
 
 def get_current_week_summary(user):
