@@ -204,6 +204,7 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
                 category_totals[cat_id] = {
                     'name': event.category.name,
                     'section_name': event.category.section.name if event.category.section else None,
+                    'section_id': event.category.section_id,
                     'raw_hours_total': 0.0,
                     'intensity_hours_total': 0.0
                 }
