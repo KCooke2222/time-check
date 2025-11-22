@@ -71,63 +71,6 @@ def format_timestamp_iso(unix_ts, user_timezone='UTC'):
         return dt.isoformat()
 
 
-def get_week_start(unix_ts, user_timezone):
-    """
-    Get the start of the week (Sunday at 00:00:00) in user's timezone.
-
-    Args:
-        unix_ts: int Unix timestamp (seconds since epoch)
-        user_timezone: string timezone name (e.g., "America/New_York")
-
-    Returns:
-        int: Unix timestamp representing Sunday at 00:00:00 in user timezone
-    """
-    try:
-        tz = pytz.timezone(user_timezone)
-        # Convert Unix timestamp to datetime in user's timezone
-        dt = datetime.fromtimestamp(unix_ts, tz=tz)
-
-        # Get the day of the week (0=Monday, 6=Sunday in Python)
-        # We want Sunday to be the start of the week
-        days_since_sunday = (dt.weekday() + 1) % 7
-
-        # Calculate Sunday at 00:00:00
-        week_start_dt = dt - timedelta(days=days_since_sunday)
-        week_start_dt = week_start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        return int(week_start_dt.timestamp())
-    except (pytz.exceptions.UnknownTimeZoneError, ValueError):
-        # Fallback to UTC if timezone is invalid
-        return get_week_start(unix_ts, 'UTC')
-
-
-def get_week_end(unix_ts, user_timezone):
-    """
-    Get the end of the week (Sunday 00:00:00 of next week) in user's timezone.
-    This returns the exclusive end boundary - events starting at this time are NOT included.
-
-    Args:
-        unix_ts: int Unix timestamp (seconds since epoch)
-        user_timezone: string timezone name (e.g., "America/New_York")
-
-    Returns:
-        int: Unix timestamp representing Sunday at 00:00:00 of next week in user timezone
-    """
-    try:
-        week_start_ts = get_week_start(unix_ts, user_timezone)
-        tz = pytz.timezone(user_timezone)
-
-        # Convert week start to datetime in user's timezone
-        week_start_dt = datetime.fromtimestamp(week_start_ts, tz=tz)
-
-        # Add 7 days to get to next Sunday 00:00:00 (exclusive end boundary)
-        week_end_dt = week_start_dt + timedelta(days=7)
-
-        return int(week_end_dt.timestamp())
-    except (pytz.exceptions.UnknownTimeZoneError, ValueError):
-        # Fallback to UTC if timezone is invalid
-        return get_week_end(unix_ts, 'UTC')
-
 
 def calculate_intensity_hours(event, user_settings):
     """

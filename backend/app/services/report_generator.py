@@ -1,13 +1,13 @@
 """
 Report generation service.
-Generates weekly and date range reports similar to the original Google Apps Script.
+Processes events into aggregated reports with category and section summaries.
 """
 
-from datetime import datetime, timezone
-from sqlalchemy import func
-from app import db
-from app.models import Event, Category, Section
-from app.utils.helpers import get_week_start, get_week_end, calculate_intensity_hours, format_timestamp_iso
+from datetime import datetime, timedelta
+import pytz
+from app.models import Section
+from app.services.event_queries import get_events_between
+from app.utils.helpers import calculate_intensity_hours, format_timestamp_iso
 
 
 def build_hierarchical_section_summary(section_totals, user):
@@ -86,92 +86,48 @@ def build_hierarchical_section_summary(section_totals, user):
     return [data for data in result.values() if data['parent_id'] is None]
 
 
-def generate_weekly_report(user, week_date_unix_ts):
+def generate_range_report(user, start_iso, end_iso, include_events=False):
     """
-    Generate a weekly report for a specific week.
-    Just a thin wrapper around generate_range_report for a single week.
+    Generate a date range report for ISO date range.
+    Fetches events and processes them into aggregated report.
 
     Args:
         user: User model instance
-        week_date_unix_ts: int - Unix timestamp for any date within the target week
-
-    Returns:
-        dict with report data - same as range report (frontend handles both formats)
-    """
-    # Get user timezone for week boundary calculations
-    user_timezone = user.settings.timezone if user.settings else 'UTC'
-
-    week_start = get_week_start(week_date_unix_ts, user_timezone)
-    week_end = get_week_end(week_date_unix_ts, user_timezone)
-
-    # Just call range report - it's already a 1-week range
-    # Frontend handles both week_start/week_end and date_range_start/date_range_end
-    report = generate_range_report(user, week_start, week_end, skip_normalize=True, include_events=True)
-
-    # Rename top-level keys for backward compatibility
-    report['week_start'] = report.pop('date_range_start')
-    report['week_end'] = report.pop('date_range_end')
-
-    return report
-
-
-def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False, include_events=False):
-    """
-    Generate a date range report aggregating multiple weeks.
-
-    Args:
-        user: User model instance
-        start_unix_ts: int - Unix timestamp for range start
-        end_unix_ts: int - Unix timestamp for range end
-        skip_normalize: bool - If True, use timestamps as-is without normalizing to week boundaries
+        start_iso: str - Start date in YYYY-MM-DD format
+        end_iso: str - End date in YYYY-MM-DD format (inclusive)
         include_events: bool - If True, include full event list in response
 
     Returns:
-        dict with report data:
-        {
-            'date_range_start': str (ISO format),
-            'date_range_end': str (ISO format),
-            'weeks_count': int,
-            'events': [...] (if include_events=True),
-            'category_summary': {category_id: {
-                'name': str,
-                'raw_hours_total': float,
-                'intensity_hours_total': float,
-                'weeks_present': int,
-                'raw_hours_avg': float,
-                'intensity_hours_avg': float
-            }},
-            'section_summary': {...},
-            'totals': {
-                'raw_hours_total': float,
-                'intensity_hours_total': float,
-                'raw_hours_avg_per_week': float,
-                'intensity_hours_avg_per_week': float
-            }
-        }
+        dict with report data
     """
-    # Get user timezone for week boundary calculations
     user_timezone = user.settings.timezone if user.settings else 'UTC'
 
-    # Normalize to week boundaries (unless already normalized)
-    if skip_normalize:
-        range_start = start_unix_ts
-        range_end = end_unix_ts
-    else:
-        range_start = get_week_start(start_unix_ts, user_timezone)
-        range_end = get_week_end(end_unix_ts, user_timezone)
+    # Fetch events for the date range
+    events = get_events_between(user, start_iso, end_iso)
 
-    # Get all events in range
-    # Note: range_end is exclusive (Sunday 00:00:00 of next week)
-    events = Event.query.filter(
-        Event.user_id == user.id,
-        Event.start_time >= range_start,
-        Event.start_time < range_end
-    ).order_by(Event.start_time).all()
+    # Calculate number of days/weeks
+    try:
+        start_dt = datetime.strptime(start_iso, '%Y-%m-%d')
+        end_dt = datetime.strptime(end_iso, '%Y-%m-%d')
+        days_count = (end_dt - start_dt).days + 1  # Inclusive
+        weeks_count = days_count / 7.0
+        if weeks_count < 1:
+            weeks_count = 1
+    except ValueError:
+        weeks_count = 1
 
-    # Calculate number of weeks (Unix timestamps are in seconds)
-    # Since range_end is exclusive (next Sunday 00:00:00), we don't need the +1
-    weeks_count = (range_end - range_start) // (7 * 86400)
+    # Helper to get week start for an event (for week presence tracking)
+    def get_event_week_start(event_start_ts):
+        """Get Sunday 00:00:00 for the week containing this timestamp"""
+        try:
+            tz = pytz.timezone(user_timezone)
+            dt = datetime.fromtimestamp(event_start_ts, tz=tz)
+            days_since_sunday = (dt.weekday() + 1) % 7
+            week_start_dt = dt - timedelta(days=days_since_sunday)
+            week_start_dt = week_start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+            return int(week_start_dt.timestamp())
+        except:
+            return event_start_ts
 
     # Track which weeks each category appears in
     category_week_presence = {}  # {category_id: set of week_start timestamps}
@@ -182,10 +138,8 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
     total_intensity_hours = 0.0
 
     for event in events:
-        event_week_start = get_week_start(event.start_time, user_timezone)
+        event_week_start = get_event_week_start(event.start_time)
         intensity_hours = calculate_intensity_hours(event, user.settings)
-
-        
 
         if event.category:
             # Update totals only if event is categorized
@@ -240,8 +194,7 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
         data['raw_hours_avg'] = data['raw_hours_total'] / weeks_present if weeks_present > 0 else 0.0
         data['intensity_hours_avg'] = data['intensity_hours_total'] / weeks_present if weeks_present > 0 else 0.0
 
-    # Build hierarchical section summary for range report
-    # Convert totals to match weekly format temporarily
+    # Build hierarchical section summary
     section_totals_for_hierarchy = {}
     for sec_id, data in section_totals.items():
         if sec_id:
@@ -304,12 +257,12 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
             event_list.append(event_dict)
 
     result = {
-        'date_range_start': format_timestamp_iso(range_start, user_timezone),
-        'date_range_end': format_timestamp_iso(range_end, user_timezone),
+        'date_range_start': start_iso,
+        'date_range_end': end_iso,
         'weeks_count': weeks_count,
         'category_summary': category_totals,
-        'section_summary': section_totals,  # Flat summary (backward compat)
-        'section_hierarchy': hierarchical_sections,  # NEW: Hierarchical tree with aggregation
+        'section_summary': section_totals,
+        'section_hierarchy': hierarchical_sections,
         'totals': {
             'raw_hours_total': total_raw_hours,
             'intensity_hours_total': total_intensity_hours,
@@ -323,17 +276,3 @@ def generate_range_report(user, start_unix_ts, end_unix_ts, skip_normalize=False
         result['events'] = event_list
 
     return result
-
-
-def get_current_week_summary(user):
-    """
-    Get a summary of the current week (convenience function).
-
-    Args:
-        user: User model instance
-
-    Returns:
-        dict with current week summary
-    """
-    current_unix_ts = int(datetime.now(timezone.utc).timestamp())
-    return generate_weekly_report(user, current_unix_ts)

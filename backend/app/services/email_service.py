@@ -5,8 +5,9 @@ Email service for sending weekly reports with Gemini-generated insights.
 from flask import current_app, render_template_string
 from flask_mail import Message
 from app import mail
-from app.services.report_generator import generate_weekly_report
+from app.services.report_generator import generate_range_report
 from datetime import datetime, timedelta
+import pytz
 import google.generativeai as genai
 import logging
 
@@ -24,13 +25,28 @@ def send_weekly_report_email(user, week_date=None):
     Returns:
         bool: True if email sent successfully
     """
+    user_timezone = user.settings.timezone if user.settings else 'UTC'
+
     # Use previous week if not specified
     if not week_date:
-        week_date = datetime.utcnow() - timedelta(days=7)
+        tz = pytz.timezone(user_timezone)
+        week_date = datetime.now(tz) - timedelta(days=7)
+
+    # Calculate week boundaries
+    target_date = week_date.date() if hasattr(week_date, 'date') else week_date
+    days_since_sunday = (target_date.weekday() + 1) % 7
+    week_start_date = target_date - timedelta(days=days_since_sunday)
+    week_end_date = week_start_date + timedelta(days=6)
+
+    start_iso = week_start_date.strftime('%Y-%m-%d')
+    end_iso = week_end_date.strftime('%Y-%m-%d')
 
     # Generate report
     try:
-        report = generate_weekly_report(user, week_date)
+        report = generate_range_report(user, start_iso, end_iso, include_events=True)
+        # Rename keys for compatibility with email template
+        report['week_start'] = report.pop('date_range_start')
+        report['week_end'] = report.pop('date_range_end')
     except Exception as e:
         logger.error(f"Failed to generate report for user {user.id}: {e}")
         return False
@@ -80,14 +96,14 @@ def generate_gemini_insights(report):
         model = genai.GenerativeModel('gemini-pro')
 
         # Prepare summary for Gemini
-        total_raw = report['totals']['raw_hours']
-        total_intensity = report['totals']['intensity_hours']
+        total_raw = report['totals']['raw_hours_total']
+        total_intensity = report['totals']['intensity_hours_total']
         intensity_bonus = total_intensity - total_raw
 
         # Get top categories
         top_categories = sorted(
             report['category_summary'].items(),
-            key=lambda x: x[1]['intensity_hours'],
+            key=lambda x: x[1]['intensity_hours_total'],
             reverse=True
         )[:3]
 
@@ -99,7 +115,7 @@ Weekly Summary:
 - Intensity bonus: {intensity_bonus:.1f}h
 
 Top Categories:
-{chr(10).join([f"- {data['name']}: {data['intensity_hours']:.1f}h (intensity-adjusted)" for _, data in top_categories])}
+{chr(10).join([f"- {data['name']}: {data['intensity_hours_total']:.1f}h (intensity-adjusted)" for _, data in top_categories])}
 
 Focus on productivity patterns, work-life balance, or suggestions for improvement. Keep it friendly and encouraging."""
 
@@ -126,14 +142,14 @@ def render_email_template(report, insights, user):
     # Prepare top categories
     top_categories = sorted(
         report['category_summary'].items(),
-        key=lambda x: x[1]['intensity_hours'],
+        key=lambda x: x[1]['intensity_hours_total'],
         reverse=True
     )[:5]
 
     # Prepare top sections
     top_sections = sorted(
         report['section_summary'].items(),
-        key=lambda x: x[1]['intensity_hours'],
+        key=lambda x: x[1]['intensity_hours_total'],
         reverse=True
     )
 
@@ -301,26 +317,26 @@ def render_email_template(report, insights, user):
     jinja_template = Template(template)
 
     return jinja_template.render(
-        week_start=datetime.fromisoformat(report['week_start']).strftime('%B %d, %Y'),
-        week_end=datetime.fromisoformat(report['week_end']).strftime('%B %d, %Y'),
-        total_raw=f"{report['totals']['raw_hours']:.1f}",
-        total_intensity=f"{report['totals']['intensity_hours']:.1f}",
-        intensity_bonus=f"{report['totals']['intensity_hours'] - report['totals']['raw_hours']:.1f}",
+        week_start=report['week_start'],
+        week_end=report['week_end'],
+        total_raw=f"{report['totals']['raw_hours_total']:.1f}",
+        total_intensity=f"{report['totals']['intensity_hours_total']:.1f}",
+        intensity_bonus=f"{report['totals']['intensity_hours_total'] - report['totals']['raw_hours_total']:.1f}",
         insights=insights,
         sections=[
             {
                 'name': data['name'],
-                'raw_hours': f"{data['raw_hours']:.1f}",
-                'intensity_hours': f"{data['intensity_hours']:.1f}"
+                'raw_hours': f"{data['raw_hours_total']:.1f}",
+                'intensity_hours': f"{data['intensity_hours_total']:.1f}"
             }
             for _, data in top_sections
         ],
         categories=[
             {
                 'name': data['name'],
-                'section': data['section_name'],
-                'raw_hours': f"{data['raw_hours']:.1f}",
-                'intensity_hours': f"{data['intensity_hours']:.1f}"
+                'section': data['section_name'] or '-',
+                'raw_hours': f"{data['raw_hours_total']:.1f}",
+                'intensity_hours': f"{data['intensity_hours_total']:.1f}"
             }
             for _, data in top_categories
         ]
