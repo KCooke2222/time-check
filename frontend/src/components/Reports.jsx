@@ -3,7 +3,7 @@ import { reportsAPI } from '../services/api';
 import HierarchicalSectionReport from './HierarchicalSectionReport';
 import { sortCategoriesBySection } from '../utils/categoryHelpers';
 import WeekCalendar from './WeekCalendar';
-import { formatDateLocal } from '../utils/dateHelpers';
+import { formatDateLocal, parseDateLocal } from '../utils/dateHelpers';
 
 function Reports() {
   // Get current week start (Sunday) as default
@@ -17,7 +17,6 @@ function Reports() {
 
   const [selectedWeeks, setSelectedWeeks] = useState([getCurrentWeekStart()]);
   const [report, setReport] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleWeekSelect = (weekStart) => {
@@ -59,7 +58,6 @@ function Reports() {
         return;
       }
 
-      setIsLoading(true);
       setError(null);
 
       try {
@@ -80,8 +78,6 @@ function Reports() {
       } catch (err) {
         console.error('Report generation failed:', err);
         setError('Failed to generate report');
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -91,19 +87,23 @@ function Reports() {
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Weekly Reports</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Weekly Reports</h2>
+          {selectedWeeks.length > 0 && (
+            <button
+              onClick={() => selectedWeeks.forEach(weekStart => handleWeekSelect(weekStart))}
+              className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded border border-red-300 transition-colors"
+            >
+              Clear Selection
+            </button>
+          )}
+        </div>
 
         {/* Week Calendar Selector */}
         <WeekCalendar
           selectedWeeks={selectedWeeks}
           onWeekSelect={handleWeekSelect}
         />
-
-        {isLoading && (
-          <div className="mt-6 text-center text-gray-600">
-            Generating report...
-          </div>
-        )}
 
         {error && (
           <div className="mt-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -139,8 +139,8 @@ function Reports() {
 
           <div className="mb-4 text-sm text-gray-600">
             <p>
-              Period: {new Date(report.date_range_start).toLocaleDateString()} -{' '}
-              {new Date(report.date_range_end).toLocaleDateString()}
+              Period: {parseDateLocal(report.date_range_start).toLocaleDateString()} -{' '}
+              {parseDateLocal(report.date_range_end).toLocaleDateString()}
             </p>
             {report.weeks_count && <p>Weeks: {report.weeks_count.toFixed(1)}</p>}
           </div>

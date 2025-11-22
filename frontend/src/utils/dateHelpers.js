@@ -11,3 +11,15 @@ export const formatDateLocal = (date) => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+/**
+ * Parse a YYYY-MM-DD date string as local date (not UTC).
+ * This avoids timezone issues with new Date(string).
+ *
+ * @param {string} dateString - Date string in YYYY-MM-DD format
+ * @returns {Date} Date object in local timezone
+ */
+export const parseDateLocal = (dateString) => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};

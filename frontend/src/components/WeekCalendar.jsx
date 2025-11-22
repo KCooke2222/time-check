@@ -3,14 +3,9 @@ import { formatDateLocal } from '../utils/dateHelpers';
 
 function WeekCalendar({ selectedWeeks, onWeekSelect }) {
   const [startMonth, setStartMonth] = useState(() => {
-    // If there's a selected week, center on that month, otherwise use current month
-    if (selectedWeeks && selectedWeeks.length > 0) {
-      const [year, month, day] = selectedWeeks[0].split('-').map(Number);
-      const firstSelectedWeek = new Date(year, month - 1, day);
-      return new Date(firstSelectedWeek.getFullYear(), firstSelectedWeek.getMonth(), 1);
-    }
+    // Center on current month (show prev month, current month, next month)
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    return new Date(now.getFullYear(), now.getMonth() - 1, 1);
   });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartWeek = useRef(null);
@@ -100,10 +95,6 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
     return compareDate < today;
   };
 
-  const handleClearSelection = () => {
-    selectedWeeks.forEach(weekStart => onWeekSelect(weekStart));
-  };
-
   const handleMouseDown = (weekStart) => {
     setIsDragging(true);
     dragStartWeek.current = weekStart;
@@ -141,18 +132,8 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
         >
           &larr;
         </button>
-        <div className="flex items-center gap-3">
-          <div className="text-sm font-medium text-gray-600">
-            {selectedWeeks.length > 0 ? `${selectedWeeks.length} week${selectedWeeks.length > 1 ? 's' : ''} selected` : 'Select weeks'}
-          </div>
-          {selectedWeeks.length > 0 && (
-            <button
-              onClick={handleClearSelection}
-              className="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded border border-red-300"
-            >
-              Clear
-            </button>
-          )}
+        <div className="text-sm font-medium text-gray-600">
+          {selectedWeeks.length > 0 ? `${selectedWeeks.length} week${selectedWeeks.length > 1 ? 's' : ''} selected` : 'Select weeks'}
         </div>
         <button
           onClick={handleNextMonth}
