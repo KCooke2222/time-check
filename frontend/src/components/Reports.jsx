@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { reportsAPI } from '../services/api';
 import HierarchicalSectionReport from './HierarchicalSectionReport';
+import { sortCategoriesBySection } from '../utils/categoryHelpers';
 
 function Reports() {
   const [reportType, setReportType] = useState('weekly'); // 'weekly' or 'range'
@@ -238,32 +239,33 @@ function Reports() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {Object.entries(report.category_summary).map(([id, data]) => (
-                      <tr key={id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {data.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {data.section_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                          {(data.raw_hours_total || data.raw_hours).toFixed(2)}h
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold text-right">
-                          {(data.intensity_hours_total || data.intensity_hours).toFixed(2)}h
-                        </td>
-                        {reportType === 'range' && (
-                          <>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                              {data.weeks_present}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                              {data.intensity_hours_avg?.toFixed(2)}h
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ))}
+                    {sortCategoriesBySection(Object.entries(report.category_summary))
+                      .map(([id, data]) => (
+                        <tr key={id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {data.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {data.section_name || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                            {(data.raw_hours_total || data.raw_hours).toFixed(2)}h
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold text-right">
+                            {(data.intensity_hours_total || data.intensity_hours).toFixed(2)}h
+                          </td>
+                          {reportType === 'range' && (
+                            <>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                {data.weeks_present}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
+                                {data.intensity_hours_avg?.toFixed(2)}h
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

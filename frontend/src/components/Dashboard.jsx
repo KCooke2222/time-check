@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { reportsAPI, calendarAPI } from '../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { sortCategoriesBySection } from '../utils/categoryHelpers';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -76,16 +77,17 @@ function Dashboard() {
     );
   }
 
-  // Prepare chart data
-  const categoryChartData = Object.entries(report.category_summary).map(([id, data]) => ({
-    name: data.name,
-    rawHours: parseFloat(data.raw_hours.toFixed(2)),
-    intensityHours: parseFloat(data.intensity_hours.toFixed(2)),
-  }));
+  // Prepare chart data with sorting by section
+  const categoryChartData = sortCategoriesBySection(Object.entries(report.category_summary))
+    .map(([id, data]) => ({
+      name: data.name,
+      rawHours: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
+      intensityHours: parseFloat((data.intensity_hours_total || data.intensity_hours || 0).toFixed(2)),
+    }));
 
   const sectionChartData = Object.entries(report.section_summary).map(([id, data]) => ({
     name: data.name,
-    value: parseFloat(data.intensity_hours.toFixed(2)),
+    value: parseFloat((data.intensity_hours_total || data.intensity_hours || 0).toFixed(2)),
   }));
 
   return (
@@ -124,19 +126,19 @@ function Dashboard() {
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-sm font-medium text-gray-500 uppercase">Raw Hours</h3>
           <p className="text-3xl font-bold text-gray-800 mt-2">
-            {report.totals.raw_hours.toFixed(1)}h
+            {(report.totals.raw_hours_total || report.totals.raw_hours || 0).toFixed(1)}h
           </p>
         </div>
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-sm font-medium text-gray-500 uppercase">Intensity Hours</h3>
           <p className="text-3xl font-bold text-blue-600 mt-2">
-            {report.totals.intensity_hours.toFixed(1)}h
+            {(report.totals.intensity_hours_total || report.totals.intensity_hours || 0).toFixed(1)}h
           </p>
         </div>
         <div className="bg-white shadow rounded-lg p-6">
           <h3 className="text-sm font-medium text-gray-500 uppercase">Intensity Bonus</h3>
           <p className="text-3xl font-bold text-green-600 mt-2">
-            {(report.totals.intensity_hours - report.totals.raw_hours).toFixed(1)}h
+            {((report.totals.intensity_hours_total || report.totals.intensity_hours || 0) - (report.totals.raw_hours_total || report.totals.raw_hours || 0)).toFixed(1)}h
           </p>
         </div>
       </div>
@@ -219,7 +221,7 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {report.events.slice(0, 10).map((event, idx) => (
+              {report.events.slice().reverse().slice(0, 10).map((event, idx) => (
                 <tr key={idx}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {event.title}
