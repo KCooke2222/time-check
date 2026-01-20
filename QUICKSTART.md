@@ -5,6 +5,7 @@ Get up and running with Time Track in 10 minutes!
 ## 1. Install Dependencies
 
 ### Backend
+
 ```bash
 cd backend
 python -m venv venv
@@ -13,6 +14,7 @@ pip install -r requirements.txt
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm install
@@ -21,6 +23,7 @@ npm install
 ## 2. Get API Keys
 
 ### Google OAuth (Required)
+
 1. Go to https://console.cloud.google.com/
 2. Create project → Enable Calendar API
 3. Create OAuth 2.0 Client ID
@@ -28,12 +31,14 @@ npm install
 5. Save Client ID and Secret
 
 ### Gemini API (Optional for AI insights)
+
 1. Go to https://makersuite.google.com/app/apikey
 2. Create free API key
 
 ## 3. Configure Environment
 
 Create `time-track\.env`:
+
 ```env
 SECRET_KEY=change-this-to-random-string
 GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
@@ -45,6 +50,7 @@ GEMINI_API_KEY=your-gemini-key
 ## 4. Run the App
 
 ### Terminal 1 (Backend)
+
 ```bash
 cd backend
 venv\Scripts\activate
@@ -52,6 +58,7 @@ python run.py
 ```
 
 ### Terminal 2 (Frontend)
+
 ```bash
 cd frontend
 npm run dev
@@ -69,16 +76,19 @@ npm run dev
 ## Example Categories
 
 ### Section: Fall 2024 Classes
+
 - **Algorithms** - Keywords: `2341, algo, algorithms`
 - **Database** - Keywords: `2326, database, db`
 
 ### Section: Personal
+
 - **Gym** - Keywords: `gym, workout, fitness`
 - **Reading** - Keywords: `read, reading, book`
 
 ## Color Your Events
 
 In Google Calendar, color your events:
+
 - **Blue** = Low focus (0.75x)
 - **Green** = Normal (1.0x)
 - **Red** = High focus (1.25x)
@@ -88,14 +98,17 @@ Then sync and watch the intensity-adjusted hours!
 ## Troubleshooting
 
 **No events showing?**
+
 - Make sure calendar is "Active" in Settings
 - Check event duration filters (default: 0-16 hours)
 
 **Categories not matching?**
+
 - Keywords are substrings (e.g., "2341" matches "Study 2341")
 - Add more keyword variations
 
 **Sync not working?**
+
 - Check Flask logs for errors
 - Verify OAuth tokens are valid
 
