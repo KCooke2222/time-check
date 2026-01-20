@@ -189,36 +189,30 @@ function CategoryTree() {
     }
   };
 
-  // Transform backend data to tree format
-  const transformToTreeData = () => {
-    const treeData = [];
+  // Transform backend data to tree format for headless-tree
+  const buildTreeData = () => {
+    const itemsMap = {};
+    const rootIds = [];
 
     // Recursive function to build section tree
     const buildSection = (section) => {
-      const node = {
-        id: `section-${section.id}`,
-        name: section.name,
-        data: {
-          id: section.id,
-          name: section.name,
-          type: 'section',
-          original: section
-        },
-        children: []
-      };
+      const sectionId = `section-${section.id}`;
+      const childIds = [];
 
       // Add child sections
       if (section.children && section.children.length > 0) {
         section.children.forEach(childSection => {
-          node.children.push(buildSection(childSection));
+          const childId = buildSection(childSection);
+          childIds.push(childId);
         });
       }
 
       // Add categories in this section
       const sectionCategories = categories.filter(c => c.section_id === section.id);
       sectionCategories.forEach(cat => {
-        node.children.push({
-          id: `category-${cat.id}`,
+        const catId = `category-${cat.id}`;
+        itemsMap[catId] = {
+          id: catId,
           name: cat.name,
           data: {
             id: cat.id,
@@ -229,22 +223,38 @@ function CategoryTree() {
             original: cat
           },
           children: []
-        });
+        };
+        childIds.push(catId);
       });
 
-      return node;
+      // Add section to map
+      itemsMap[sectionId] = {
+        id: sectionId,
+        name: section.name,
+        data: {
+          id: section.id,
+          name: section.name,
+          type: 'section',
+          original: section
+        },
+        children: childIds
+      };
+
+      return sectionId;
     };
 
-    // Add root sections
+    // Build root sections
     sections.forEach(section => {
-      treeData.push(buildSection(section));
+      const sectionId = buildSection(section);
+      rootIds.push(sectionId);
     });
 
     // Add root-level categories
     const rootCategories = categories.filter(c => !c.section_id);
     rootCategories.forEach(cat => {
-      treeData.push({
-        id: `category-${cat.id}`,
+      const catId = `category-${cat.id}`;
+      itemsMap[catId] = {
+        id: catId,
         name: cat.name,
         data: {
           id: cat.id,
@@ -255,21 +265,38 @@ function CategoryTree() {
           original: cat
         },
         children: []
-      });
+      };
+      rootIds.push(catId);
     });
 
-    return treeData;
+    return { itemsMap, rootIds };
   };
 
-  const treeData = transformToTreeData();
+  const { itemsMap, rootIds } = buildTreeData();
 
   const tree = useTree({
-    items: treeData,
-    defaultExpandedItems: treeData.map(item => item.id),
+    rootItemIds: rootIds,
+    dataLoader: {
+      getItem: (id) => {
+        const item = itemsMap[id];
+        if (!item) return null;
+        return {
+          id: item.id,
+          name: item.name,
+          data: item.data,
+        };
+      },
+      getChildren: (id) => {
+        const item = itemsMap[id];
+        return item ? item.children : [];
+      },
+    },
+    defaultExpandedItems: Object.keys(itemsMap).filter(id => id.startsWith('section-')),
     canDragItem: () => true,
-    canDropInside: (item, target) => {
+    canDropInside: (draggedItem, target) => {
       // Can only drop inside sections (folders)
-      return target.data.type === 'section';
+      const targetData = itemsMap[target.getId()]?.data;
+      return targetData?.type === 'section';
     },
     canDropBefore: () => false,
     canDropAfter: () => false,
@@ -277,15 +304,18 @@ function CategoryTree() {
       if (!target || draggedItems.length === 0) return;
 
       const draggedItem = draggedItems[0];
-      const targetId = target.data.id;
+      const draggedData = itemsMap[draggedItem.getId()]?.data;
+      const targetData = itemsMap[target.getId()]?.data;
+
+      if (!draggedData || !targetData) return;
 
       try {
-        if (draggedItem.data.type === 'section') {
+        if (draggedData.type === 'section') {
           // Moving a section into another section
-          await categoriesAPI.updateSection(draggedItem.data.id, { parent_id: targetId });
+          await categoriesAPI.updateSection(draggedData.id, { parent_id: targetData.id });
         } else {
           // Moving a category into a section
-          await categoriesAPI.updateCategory(draggedItem.data.id, { section_id: targetId });
+          await categoriesAPI.updateCategory(draggedData.id, { section_id: targetData.id });
         }
         await loadData();
         setMessage({ type: 'success', text: 'Moved successfully' });
@@ -440,7 +470,7 @@ function CategoryTree() {
           </div>
 
           <div className="p-4" {...tree.getContainerProps()}>
-            {treeData.length === 0 ? (
+            {rootIds.length === 0 ? (
               <p className="text-gray-400 text-center py-12">
                 No categories yet
               </p>
