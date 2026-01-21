@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { categoriesAPI } from '../services/api';
-import { useTree } from '@headless-tree/react';
+import { UncontrolledTreeEnvironment, Tree, StaticTreeDataProvider } from 'react-complex-tree';
+import 'react-complex-tree/lib/style-modern.css';
 
 // Tag bubble component
 function TagBubble({ tag, onRemove }) {
@@ -18,133 +19,6 @@ function TagBubble({ tag, onRemove }) {
   );
 }
 
-// Custom tree item renderer
-function TreeItemRenderer({ item, onDelete, onRename, onSelect, isSelected }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(item.getItemName());
-  const inputRef = useRef(null);
-
-  const itemMeta = item.getItemMeta();
-  const isFolder = item.getData().type === 'section';
-  const hasChildren = item.hasChildren();
-  const isExpanded = item.isExpanded();
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleSave = () => {
-    const currentName = item.getItemName();
-    if (editValue.trim() && editValue !== currentName) {
-      onRename(item.getData().id, editValue.trim(), isFolder);
-    }
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      setEditValue(item.getItemName());
-      setIsEditing(false);
-    }
-  };
-
-  const itemProps = item.getProps();
-
-  return (
-    <div
-      {...itemProps}
-      onClick={(e) => {
-        itemProps.onClick?.(e);
-        onSelect(item);
-      }}
-      className={`flex items-center gap-2 py-2 px-3 rounded cursor-pointer transition-all group ${
-        isSelected
-          ? isFolder
-            ? 'bg-yellow-100 border-l-4 border-yellow-500'
-            : 'bg-blue-100 border-l-4 border-blue-500'
-          : 'hover:bg-gray-50 border-l-4 border-transparent hover:border-' + (isFolder ? 'yellow' : 'blue') + '-300'
-      }`}
-      style={{ marginLeft: `${itemMeta.level * 24}px` }}
-    >
-      {/* Drag handle */}
-      <button
-        {...item.getDragProps()}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 px-2 py-1"
-        onClick={(e) => e.stopPropagation()}
-        title="Drag to move"
-      >
-        <svg width="16" height="20" viewBox="0 0 12 16" fill="currentColor">
-          <circle cx="3" cy="3" r="1.5"/>
-          <circle cx="9" cy="3" r="1.5"/>
-          <circle cx="3" cy="8" r="1.5"/>
-          <circle cx="9" cy="8" r="1.5"/>
-          <circle cx="3" cy="13" r="1.5"/>
-          <circle cx="9" cy="13" r="1.5"/>
-        </svg>
-      </button>
-
-      {/* Collapse/expand button */}
-      {hasChildren ? (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            item.toggle();
-          }}
-          className="text-gray-500 hover:text-gray-700 w-4 text-sm"
-        >
-          {isExpanded ? '▾' : '▸'}
-        </button>
-      ) : (
-        <span className="w-4"></span>
-      )}
-
-      {/* Item name - editable */}
-      {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={handleKeyDown}
-          className="flex-1 px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <span
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(true);
-          }}
-          className="flex-1 cursor-text"
-          title="Double-click to rename"
-        >
-          {item.getItemName()}
-        </span>
-      )}
-
-      {/* Delete button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(item.getData().id, !isFolder);
-        }}
-        className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity px-1"
-        title={isFolder ? "Delete folder" : "Delete category"}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.5a.5.5 0 0 0 0 1h.79l.812 10.56A1.5 1.5 0 0 0 5.6 15h4.8a1.5 1.5 0 0 0 1.498-1.44L12.71 3.5h.79a.5.5 0 0 0 0-1H11Z"/>
-        </svg>
-      </button>
-    </div>
-  );
-}
-
 function CategoryTree() {
   const [sections, setSections] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -152,7 +26,7 @@ function CategoryTree() {
   const [message, setMessage] = useState(null);
 
   // Selection state
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   // Tag editing
   const [tags, setTags] = useState([]);
@@ -162,16 +36,6 @@ function CategoryTree() {
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    if (selectedItem && selectedItem.getData().type === 'category') {
-      const data = selectedItem.getData();
-      const keywords = Array.isArray(data.keywords)
-        ? data.keywords
-        : (data.keywords ? JSON.parse(data.keywords) : []);
-      setTags(keywords);
-    }
-  }, [selectedItem]);
 
   const loadData = async () => {
     try {
@@ -189,20 +53,28 @@ function CategoryTree() {
     }
   };
 
-  // Transform backend data to tree format for headless-tree
-  const buildTreeData = () => {
-    const itemsMap = {};
-    const rootIds = [];
+  // Transform backend data to react-complex-tree format
+  const buildTreeItems = () => {
+    const items = {
+      root: {
+        index: 'root',
+        isFolder: true,
+        children: [],
+        data: 'Root',
+        canMove: false,
+        canRename: false
+      }
+    };
 
     // Recursive function to build section tree
-    const buildSection = (section) => {
+    const buildSection = (section, parentId = 'root') => {
       const sectionId = `section-${section.id}`;
       const childIds = [];
 
       // Add child sections
       if (section.children && section.children.length > 0) {
         section.children.forEach(childSection => {
-          const childId = buildSection(childSection);
+          const childId = buildSection(childSection, sectionId);
           childIds.push(childId);
         });
       }
@@ -211,131 +83,86 @@ function CategoryTree() {
       const sectionCategories = categories.filter(c => c.section_id === section.id);
       sectionCategories.forEach(cat => {
         const catId = `category-${cat.id}`;
-        itemsMap[catId] = {
-          id: catId,
-          name: cat.name,
-          data: {
+        items[catId] = {
+          index: catId,
+          isFolder: false,
+          children: [],
+          data: cat.name,
+          canMove: true,
+          canRename: true,
+          metadata: {
             id: cat.id,
-            name: cat.name,
             type: 'category',
             keywords: cat.keywords,
             section_id: cat.section_id,
             original: cat
-          },
-          children: []
+          }
         };
         childIds.push(catId);
       });
 
-      // Add section to map
-      itemsMap[sectionId] = {
-        id: sectionId,
-        name: section.name,
-        data: {
+      // Add section to items
+      items[sectionId] = {
+        index: sectionId,
+        isFolder: true,
+        children: childIds,
+        data: section.name,
+        canMove: true,
+        canRename: true,
+        metadata: {
           id: section.id,
-          name: section.name,
           type: 'section',
           original: section
-        },
-        children: childIds
+        }
       };
+
+      // Add to parent's children
+      items[parentId].children.push(sectionId);
 
       return sectionId;
     };
 
     // Build root sections
     sections.forEach(section => {
-      const sectionId = buildSection(section);
-      rootIds.push(sectionId);
+      buildSection(section, 'root');
     });
 
     // Add root-level categories
     const rootCategories = categories.filter(c => !c.section_id);
     rootCategories.forEach(cat => {
       const catId = `category-${cat.id}`;
-      itemsMap[catId] = {
-        id: catId,
-        name: cat.name,
-        data: {
+      items[catId] = {
+        index: catId,
+        isFolder: false,
+        children: [],
+        data: cat.name,
+        canMove: true,
+        canRename: true,
+        metadata: {
           id: cat.id,
-          name: cat.name,
           type: 'category',
           keywords: cat.keywords,
           section_id: cat.section_id,
           original: cat
-        },
-        children: []
+        }
       };
-      rootIds.push(catId);
+      items.root.children.push(catId);
     });
 
-    return { itemsMap, rootIds };
+    return items;
   };
 
-  const { itemsMap, rootIds } = buildTreeData();
+  const treeItems = buildTreeItems();
 
-  const tree = useTree({
-    rootItemIds: rootIds,
-    dataLoader: {
-      getItem: (id) => {
-        const item = itemsMap[id];
-        if (!item) return null;
-        return {
-          id: item.id,
-          name: item.name,
-          data: item.data,
-        };
-      },
-      getChildren: (id) => {
-        const item = itemsMap[id];
-        return item ? item.children : [];
-      },
-    },
-    defaultExpandedItems: Object.keys(itemsMap).filter(id => id.startsWith('section-')),
-    canDragItem: () => true,
-    canDropInside: (draggedItem, target) => {
-      // Can only drop inside sections (folders)
-      const targetData = itemsMap[target.getId()]?.data;
-      return targetData?.type === 'section';
-    },
-    canDropBefore: () => false,
-    canDropAfter: () => false,
-    onDrop: async ({ draggedItems, target }) => {
-      if (!target || draggedItems.length === 0) return;
+  // Handle item rename
+  const handleRename = async (item, name) => {
+    if (!item.metadata) return;
 
-      const draggedItem = draggedItems[0];
-      const draggedData = itemsMap[draggedItem.getId()]?.data;
-      const targetData = itemsMap[target.getId()]?.data;
-
-      if (!draggedData || !targetData) return;
-
-      try {
-        if (draggedData.type === 'section') {
-          // Moving a section into another section
-          await categoriesAPI.updateSection(draggedData.id, { parent_id: targetData.id });
-        } else {
-          // Moving a category into a section
-          await categoriesAPI.updateCategory(draggedData.id, { section_id: targetData.id });
-        }
-        await loadData();
-        setMessage({ type: 'success', text: 'Moved successfully' });
-        setTimeout(() => setMessage(null), 2000);
-      } catch (err) {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to move' });
-      }
-    },
-  });
-
-  const handleSelect = (item) => {
-    setSelectedItem(item);
-  };
-
-  const handleRename = async (id, newName, isFolder) => {
     try {
-      if (isFolder) {
-        await categoriesAPI.updateSection(id, { name: newName });
+      if (item.metadata.type === 'section') {
+        await categoriesAPI.updateSection(item.metadata.id, { name });
       } else {
-        await categoriesAPI.updateCategory(id, { name: newName });
+        await categoriesAPI.updateCategory(item.metadata.id, { name });
       }
       await loadData();
       setMessage({ type: 'success', text: 'Renamed successfully' });
@@ -345,8 +172,40 @@ function CategoryTree() {
     }
   };
 
+  // Handle item drag-and-drop
+  const handleDrop = async (itemIds, target) => {
+    if (!target.targetItem || itemIds.length === 0) return;
+
+    const draggedItemId = itemIds[0];
+    const draggedItem = treeItems[draggedItemId];
+    const targetItem = treeItems[target.targetItem];
+
+    if (!draggedItem?.metadata || !targetItem?.metadata) return;
+
+    // Can only drop into sections
+    if (targetItem.metadata.type !== 'section') return;
+
+    try {
+      if (draggedItem.metadata.type === 'section') {
+        await categoriesAPI.updateSection(draggedItem.metadata.id, { parent_id: targetItem.metadata.id });
+      } else {
+        await categoriesAPI.updateCategory(draggedItem.metadata.id, { section_id: targetItem.metadata.id });
+      }
+      await loadData();
+      setMessage({ type: 'success', text: 'Moved successfully' });
+      setTimeout(() => setMessage(null), 2000);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to move' });
+    }
+  };
+
   const handleAddFolder = async () => {
-    const parentId = selectedItem?.getData().type === 'section' ? selectedItem.getData().id : null;
+    let parentId = null;
+
+    if (selectedItemId && treeItems[selectedItemId]?.metadata?.type === 'section') {
+      parentId = treeItems[selectedItemId].metadata.id;
+    }
+
     const timestamp = Date.now();
     const name = `New Folder ${timestamp}`;
 
@@ -361,7 +220,12 @@ function CategoryTree() {
   };
 
   const handleAddCategory = async () => {
-    const parentId = selectedItem?.getData().type === 'section' ? selectedItem.getData().id : null;
+    let parentId = null;
+
+    if (selectedItemId && treeItems[selectedItemId]?.metadata?.type === 'section') {
+      parentId = treeItems[selectedItemId].metadata.id;
+    }
+
     const timestamp = Date.now();
     const name = `New Category ${timestamp}`;
 
@@ -375,7 +239,11 @@ function CategoryTree() {
     }
   };
 
-  const handleDelete = async (id, isCategory) => {
+  const handleDelete = async (itemId) => {
+    const item = treeItems[itemId];
+    if (!item?.metadata) return;
+
+    const isCategory = item.metadata.type === 'category';
     const confirmMsg = isCategory
       ? 'Delete this category?'
       : 'Delete this folder and all contents?';
@@ -384,11 +252,11 @@ function CategoryTree() {
 
     try {
       if (isCategory) {
-        await categoriesAPI.deleteCategory(id);
+        await categoriesAPI.deleteCategory(item.metadata.id);
       } else {
-        await categoriesAPI.deleteSection(id);
+        await categoriesAPI.deleteSection(item.metadata.id);
       }
-      setSelectedItem(null);
+      setSelectedItemId(null);
       await loadData();
       setMessage({ type: 'success', text: 'Deleted successfully' });
       setTimeout(() => setMessage(null), 2000);
@@ -397,15 +265,35 @@ function CategoryTree() {
     }
   };
 
+  // Update tags when selection changes
+  useEffect(() => {
+    if (selectedItemId && treeItems[selectedItemId]) {
+      const item = treeItems[selectedItemId];
+      if (item.metadata?.type === 'category') {
+        const keywords = Array.isArray(item.metadata.keywords)
+          ? item.metadata.keywords
+          : (item.metadata.keywords ? JSON.parse(item.metadata.keywords) : []);
+        setTags(keywords);
+      } else {
+        setTags([]);
+      }
+    } else {
+      setTags([]);
+    }
+  }, [selectedItemId, categories]);
+
   const handleAddTag = async () => {
-    if (!newTag.trim() || !selectedItem || selectedItem.getData().type !== 'category') return;
+    if (!newTag.trim() || !selectedItemId) return;
+
+    const item = treeItems[selectedItemId];
+    if (!item?.metadata || item.metadata.type !== 'category') return;
 
     const newTags = [...tags, newTag.trim()];
     setTags(newTags);
     setNewTag('');
 
     try {
-      await categoriesAPI.updateCategory(selectedItem.getData().id, { keywords: newTags });
+      await categoriesAPI.updateCategory(item.metadata.id, { keywords: newTags });
       await loadData();
       setMessage({ type: 'success', text: 'Tag added' });
       setTimeout(() => setMessage(null), 2000);
@@ -416,11 +304,16 @@ function CategoryTree() {
   };
 
   const handleRemoveTag = async (tagToRemove) => {
+    if (!selectedItemId) return;
+
+    const item = treeItems[selectedItemId];
+    if (!item?.metadata || item.metadata.type !== 'category') return;
+
     const newTags = tags.filter(t => t !== tagToRemove);
     setTags(newTags);
 
     try {
-      await categoriesAPI.updateCategory(selectedItem.getData().id, { keywords: newTags });
+      await categoriesAPI.updateCategory(item.metadata.id, { keywords: newTags });
       await loadData();
       setMessage({ type: 'success', text: 'Tag removed' });
       setTimeout(() => setMessage(null), 2000);
@@ -440,6 +333,9 @@ function CategoryTree() {
   if (isLoading) {
     return <div className="text-center py-8 text-gray-500">Loading...</div>;
   }
+
+  const selectedItem = selectedItemId ? treeItems[selectedItemId] : null;
+  const showTagPanel = selectedItem?.metadata?.type === 'category';
 
   return (
     <div className="grid grid-cols-3 gap-6">
@@ -467,24 +363,60 @@ function CategoryTree() {
             >
               + Category
             </button>
+            {selectedItemId && selectedItemId !== 'root' && (
+              <button
+                onClick={() => handleDelete(selectedItemId)}
+                className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium ml-auto"
+              >
+                Delete
+              </button>
+            )}
           </div>
 
-          <div className="p-4" {...tree.getContainerProps()}>
-            {rootIds.length === 0 ? (
+          <div className="p-4" style={{ height: '600px' }}>
+            {treeItems.root.children.length === 0 ? (
               <p className="text-gray-400 text-center py-12">
                 No categories yet
               </p>
             ) : (
-              tree.getItems().map((item) => (
-                <TreeItemRenderer
-                  key={item.getId()}
-                  item={item}
-                  onDelete={handleDelete}
-                  onRename={handleRename}
-                  onSelect={handleSelect}
-                  isSelected={selectedItem?.getId?.() === item.getId()}
+              <UncontrolledTreeEnvironment
+                dataProvider={new StaticTreeDataProvider(treeItems, (item, data) => ({ ...item, data }))}
+                getItemTitle={item => item.data}
+                viewState={{}}
+                canDragAndDrop={true}
+                canDropOnFolder={true}
+                canReorderItems={false}
+                canRename={true}
+                onRenameItem={handleRename}
+                onDrop={handleDrop}
+                onSelectItems={(items) => {
+                  if (items.length > 0) {
+                    setSelectedItemId(items[0]);
+                  }
+                }}
+                defaultInteractionMode={{
+                  mode: 'custom',
+                  extends: 'click-item-to-expand',
+                  createInteractiveElementProps: (item, treeId, actions, renderFlags) => ({
+                    onClick: (e) => {
+                      actions.focusItem();
+                      actions.selectItem();
+                    },
+                    onDoubleClick: (e) => {
+                      e.stopPropagation();
+                      if (item.isFolder) {
+                        actions.toggleExpandedState();
+                      }
+                    }
+                  })
+                }}
+              >
+                <Tree
+                  treeId="category-tree"
+                  rootItem="root"
+                  treeLabel="Categories"
                 />
-              ))
+              </UncontrolledTreeEnvironment>
             )}
           </div>
         </div>
@@ -493,7 +425,7 @@ function CategoryTree() {
       {/* Right: Properties Panel */}
       <div className="col-span-1">
         <div className="border border-gray-200 rounded-lg bg-white p-4 sticky top-4">
-          {selectedItem && selectedItem.getData().type === 'category' ? (
+          {showTagPanel ? (
             <>
               <h3 className="font-semibold text-gray-900 mb-4">Tags</h3>
 
