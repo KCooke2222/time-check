@@ -252,14 +252,18 @@ def update_category(category_id):
             return jsonify({'error': 'keywords must be a list'}), 400
         category.set_keywords(data['keywords'])
     if 'section_id' in data:
-        # Verify section exists and belongs to user
-        section = Section.query.filter_by(
-            id=data['section_id'],
-            user_id=current_user.id
-        ).first()
-        if not section:
-            return jsonify({'error': 'Section not found'}), 404
-        category.section_id = data['section_id']
+        section_id = data['section_id']
+        if section_id is None:
+            category.section_id = None
+        else:
+            # Verify section exists and belongs to user
+            section = Section.query.filter_by(
+                id=section_id,
+                user_id=current_user.id
+            ).first()
+            if not section:
+                return jsonify({'error': 'Section not found'}), 404
+            category.section_id = section_id
     if 'display_order' in data:
         category.display_order = data['display_order']
 
