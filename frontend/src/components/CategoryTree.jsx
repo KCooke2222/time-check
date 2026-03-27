@@ -31,6 +31,7 @@ function TagBubble({ tag, onRemove }) {
 
 function CategoryTree() {
   const environmentRef = useRef(null);
+  const treeRef = useRef(null);
   const itemsRef = useRef(null);
   const dataProviderRef = useRef(null);
   const errorTimeoutRef = useRef(null);
@@ -306,7 +307,7 @@ function CategoryTree() {
             metadata: {
               id: null,
               type: 'category',
-              keywords: ['New Category'],
+              keywords: [],
               section_id: getEntityParentId(parentTreeId),
               display_order: 0,
             },
@@ -366,6 +367,7 @@ function CategoryTree() {
         setItems(finalItems, [parentTreeId, createdTreeId]);
         setSelectedItemId(createdTreeId);
         environmentRef.current?.selectItems([createdTreeId], TREE_ID);
+        startRenamingCreatedItem(createdTreeId);
         await persistOrderForParent(finalItems, parentTreeId);
         return;
       }
@@ -403,6 +405,7 @@ function CategoryTree() {
       setItems(finalItems, [parentTreeId, createdTreeId]);
       setSelectedItemId(createdTreeId);
       environmentRef.current?.selectItems([createdTreeId], TREE_ID);
+      startRenamingCreatedItem(createdTreeId);
       await persistOrderForParent(finalItems, parentTreeId);
     } catch (error) {
       setItems(previousItems, [parentTreeId]);
@@ -497,6 +500,14 @@ function CategoryTree() {
     setSelectedItemId(null);
     setPendingDeleteId(null);
     environmentRef.current?.selectItems([], TREE_ID);
+  };
+
+  const startRenamingCreatedItem = (treeId) => {
+    setTimeout(() => {
+      treeRef.current?.selectItems([treeId]);
+      treeRef.current?.focusItem(treeId);
+      treeRef.current?.startRenamingItem(treeId);
+    }, 0);
   };
 
   const handleTreeAreaClick = (event) => {
@@ -616,6 +627,7 @@ function CategoryTree() {
                 }}
               >
                 <Tree
+                  ref={treeRef}
                   treeId={TREE_ID}
                   rootItem={ROOT_ID}
                   treeLabel="Categories"
