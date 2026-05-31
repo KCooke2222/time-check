@@ -82,12 +82,11 @@ function Dashboard() {
     .map(([id, data]) => ({
       name: data.name,
       rawHours: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
-      intensityHours: parseFloat((data.intensity_hours_total || data.intensity_hours || 0).toFixed(2)),
     }));
 
   const sectionChartData = Object.entries(report.section_summary).map(([id, data]) => ({
     name: data.name,
-    value: parseFloat((data.intensity_hours_total || data.intensity_hours || 0).toFixed(2)),
+    value: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
   }));
 
   return (
@@ -122,23 +121,17 @@ function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-sm font-medium text-gray-500 uppercase">Raw Hours</h3>
+          <h3 className="text-sm font-medium text-gray-500 uppercase">Total Hours</h3>
           <p className="text-3xl font-bold text-gray-800 mt-2">
             {(report.totals.raw_hours_total || report.totals.raw_hours || 0).toFixed(1)}h
           </p>
         </div>
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-sm font-medium text-gray-500 uppercase">Intensity Hours</h3>
-          <p className="text-3xl font-bold text-blue-600 mt-2">
-            {(report.totals.intensity_hours_total || report.totals.intensity_hours || 0).toFixed(1)}h
-          </p>
-        </div>
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-sm font-medium text-gray-500 uppercase">Intensity Bonus</h3>
-          <p className="text-3xl font-bold text-green-600 mt-2">
-            {((report.totals.intensity_hours_total || report.totals.intensity_hours || 0) - (report.totals.raw_hours_total || report.totals.raw_hours || 0)).toFixed(1)}h
+          <h3 className="text-sm font-medium text-gray-500 uppercase">Avg / Week</h3>
+          <p className="text-3xl font-bold text-gray-800 mt-2">
+            {(report.totals.raw_hours_avg_per_week || 0).toFixed(1)}h
           </p>
         </div>
       </div>
@@ -149,7 +142,7 @@ function Dashboard() {
         {sectionChartData.length > 0 && (
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Time by Section (Intensity-Adjusted)
+              Time by Section
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -183,12 +176,7 @@ function Dashboard() {
               <div key={idx} className="border-b pb-2">
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-gray-700">{cat.name}</span>
-                  <div className="text-sm text-gray-600">
-                    <span className="mr-3">Raw: {cat.rawHours}h</span>
-                    <span className="font-semibold text-blue-600">
-                      Intensity: {cat.intensityHours}h
-                    </span>
-                  </div>
+                  <span className="text-sm text-gray-600">{cat.rawHours}h</span>
                 </div>
               </div>
             ))}
@@ -215,9 +203,6 @@ function Dashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Duration
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Intensity
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -234,19 +219,6 @@ function Dashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {event.duration_hours.toFixed(2)}h
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded ${
-                        event.color === 'blue'
-                          ? 'bg-blue-100 text-blue-800'
-                          : event.color === 'red'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {event.intensity_hours.toFixed(2)}h
-                    </span>
                   </td>
                 </tr>
               ))}

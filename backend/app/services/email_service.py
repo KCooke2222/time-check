@@ -97,13 +97,11 @@ def generate_gemini_insights(report):
 
         # Prepare summary for Gemini
         total_raw = report['totals']['raw_hours_total']
-        total_intensity = report['totals']['intensity_hours_total']
-        intensity_bonus = total_intensity - total_raw
 
         # Get top categories
         top_categories = sorted(
             report['category_summary'].items(),
-            key=lambda x: x[1]['intensity_hours_total'],
+            key=lambda x: x[1]['raw_hours_total'],
             reverse=True
         )[:3]
 
@@ -111,11 +109,9 @@ def generate_gemini_insights(report):
 
 Weekly Summary:
 - Total hours tracked: {total_raw:.1f}h
-- Intensity-adjusted hours: {total_intensity:.1f}h
-- Intensity bonus: {intensity_bonus:.1f}h
 
 Top Categories:
-{chr(10).join([f"- {data['name']}: {data['intensity_hours_total']:.1f}h (intensity-adjusted)" for _, data in top_categories])}
+{chr(10).join([f"- {data['name']}: {data['raw_hours_total']:.1f}h" for _, data in top_categories])}
 
 Focus on productivity patterns, work-life balance, or suggestions for improvement. Keep it friendly and encouraging."""
 
@@ -142,14 +138,13 @@ def render_email_template(report, insights, user):
     # Prepare top categories
     top_categories = sorted(
         report['category_summary'].items(),
-        key=lambda x: x[1]['intensity_hours_total'],
+        key=lambda x: x[1]['raw_hours_total'],
         reverse=True
     )[:5]
 
-    # Prepare top sections
     top_sections = sorted(
         report['section_summary'].items(),
-        key=lambda x: x[1]['intensity_hours_total'],
+        key=lambda x: x[1]['raw_hours_total'],
         reverse=True
     )
 
@@ -245,15 +240,7 @@ def render_email_template(report, insights, user):
         <div class="stat-grid">
             <div class="stat-card">
                 <div class="stat-value">{{ total_raw }}h</div>
-                <div class="stat-label">Raw Hours</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: #4299e1;">{{ total_intensity }}h</div>
-                <div class="stat-label">Intensity Hours</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color: #48bb78;">+{{ intensity_bonus }}h</div>
-                <div class="stat-label">Intensity Bonus</div>
+                <div class="stat-label">Total Hours</div>
             </div>
         </div>
 
@@ -267,8 +254,7 @@ def render_email_template(report, insights, user):
             <thead>
                 <tr>
                     <th>Section</th>
-                    <th>Raw Hours</th>
-                    <th>Intensity Hours</th>
+                    <th>Hours</th>
                 </tr>
             </thead>
             <tbody>
@@ -276,7 +262,6 @@ def render_email_template(report, insights, user):
                 <tr>
                     <td><strong>{{ section.name }}</strong></td>
                     <td>{{ section.raw_hours }}h</td>
-                    <td style="color: #4299e1;"><strong>{{ section.intensity_hours }}h</strong></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -288,8 +273,7 @@ def render_email_template(report, insights, user):
                 <tr>
                     <th>Category</th>
                     <th>Section</th>
-                    <th>Raw Hours</th>
-                    <th>Intensity Hours</th>
+                    <th>Hours</th>
                 </tr>
             </thead>
             <tbody>
@@ -298,7 +282,6 @@ def render_email_template(report, insights, user):
                     <td>{{ category.name }}</td>
                     <td style="color: #718096; font-size: 12px;">{{ category.section }}</td>
                     <td>{{ category.raw_hours }}h</td>
-                    <td style="color: #4299e1;"><strong>{{ category.intensity_hours }}h</strong></td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -320,14 +303,11 @@ def render_email_template(report, insights, user):
         week_start=report['week_start'],
         week_end=report['week_end'],
         total_raw=f"{report['totals']['raw_hours_total']:.1f}",
-        total_intensity=f"{report['totals']['intensity_hours_total']:.1f}",
-        intensity_bonus=f"{report['totals']['intensity_hours_total'] - report['totals']['raw_hours_total']:.1f}",
         insights=insights,
         sections=[
             {
                 'name': data['name'],
                 'raw_hours': f"{data['raw_hours_total']:.1f}",
-                'intensity_hours': f"{data['intensity_hours_total']:.1f}"
             }
             for _, data in top_sections
         ],
@@ -336,7 +316,6 @@ def render_email_template(report, insights, user):
                 'name': data['name'],
                 'section': data['section_name'] or '-',
                 'raw_hours': f"{data['raw_hours_total']:.1f}",
-                'intensity_hours': f"{data['intensity_hours_total']:.1f}"
             }
             for _, data in top_categories
         ]

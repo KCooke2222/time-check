@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from flask_login import UserMixin
 from app import db
-import json
 
 
 class User(UserMixin, db.Model):
@@ -36,39 +35,14 @@ class User(UserMixin, db.Model):
 
 
 class UserSettings(db.Model):
-    """User settings for event filtering and intensity multipliers"""
+    """User settings for event filtering"""
     __tablename__ = 'user_settings'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
     min_event_duration_hours = db.Column(db.Float, default=0.0)
     max_event_duration_hours = db.Column(db.Float, default=16.0)
-    intensity_multipliers_json = db.Column(db.Text)  # JSON: {"blue": 0.75, "green": 1.0, "red": 1.25}
     timezone = db.Column(db.String(50), default='UTC')
-
-    def __init__(self, **kwargs):
-        super(UserSettings, self).__init__(**kwargs)
-        if not self.intensity_multipliers_json:
-            self.set_default_multipliers()
-
-    def set_default_multipliers(self):
-        """Set default color intensity multipliers"""
-        default = {
-            "blue": 0.75,
-            "green": 1.0,
-            "red": 1.25
-        }
-        self.intensity_multipliers_json = json.dumps(default)
-
-    def get_multipliers(self):
-        """Get intensity multipliers as dict"""
-        if self.intensity_multipliers_json:
-            return json.loads(self.intensity_multipliers_json)
-        return {"blue": 0.75, "green": 1.0, "red": 1.25}
-
-    def set_multipliers(self, multipliers_dict):
-        """Set intensity multipliers from dict"""
-        self.intensity_multipliers_json = json.dumps(multipliers_dict)
 
     def __repr__(self):
         return f'<UserSettings user_id={self.user_id}>'

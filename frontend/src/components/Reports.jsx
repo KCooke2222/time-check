@@ -146,34 +146,20 @@ function Reports() {
           </div>
 
           {/* Totals */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gray-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Raw Hours</p>
+              <p className="text-sm text-gray-600">Total Hours</p>
               <p className="text-2xl font-bold text-gray-800">
                 {report.totals.raw_hours_total.toFixed(1)}h
               </p>
             </div>
-            <div className="bg-blue-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Intensity Hours</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {report.totals.intensity_hours_total.toFixed(1)}h
-              </p>
-            </div>
             {selectedWeeks.length > 1 && (
-              <>
-                <div className="bg-gray-50 p-4 rounded">
-                  <p className="text-sm text-gray-600">Avg Raw/Week</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {report.totals.raw_hours_avg_per_week.toFixed(1)}h
-                  </p>
-                </div>
-                <div className="bg-blue-50 p-4 rounded">
-                  <p className="text-sm text-gray-600">Avg Intensity/Week</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {report.totals.intensity_hours_avg_per_week.toFixed(1)}h
-                  </p>
-                </div>
-              </>
+              <div className="bg-gray-50 p-4 rounded">
+                <p className="text-sm text-gray-600">Avg / Week</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  {report.totals.raw_hours_avg_per_week.toFixed(1)}h
+                </p>
+              </div>
             )}
           </div>
 
@@ -200,10 +186,7 @@ function Reports() {
                         Section
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                        Raw Hours
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                        Intensity Hours
+                        Hours
                       </th>
                       {selectedWeeks.length > 1 && (
                         <>
@@ -230,16 +213,13 @@ function Reports() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
                             {data.raw_hours_total.toFixed(2)}h
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-semibold text-right">
-                            {data.intensity_hours_total.toFixed(2)}h
-                          </td>
                           {selectedWeeks.length > 1 && (
                             <>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
                                 {data.weeks_present}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                {data.intensity_hours_avg?.toFixed(2)}h
+                                {data.raw_hours_avg?.toFixed(2)}h
                               </td>
                             </>
                           )}

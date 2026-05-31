@@ -17,9 +17,6 @@ function Settings() {
   // General settings form
   const [minHours, setMinHours] = useState(0);
   const [maxHours, setMaxHours] = useState(16);
-  const [blueMultiplier, setBlueMultiplier] = useState(0.75);
-  const [greenMultiplier, setGreenMultiplier] = useState(1.0);
-  const [redMultiplier, setRedMultiplier] = useState(1.25);
   const [timezone, setTimezone] = useState('UTC');
 
   useEffect(() => {
@@ -34,9 +31,6 @@ function Settings() {
       setSettings(data);
       setMinHours(data.min_event_duration_hours);
       setMaxHours(data.max_event_duration_hours);
-      setBlueMultiplier(data.intensity_multipliers.blue);
-      setGreenMultiplier(data.intensity_multipliers.green);
-      setRedMultiplier(data.intensity_multipliers.red);
       setTimezone(data.timezone || 'UTC');
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -94,11 +88,6 @@ function Settings() {
       await settingsAPI.update({
         min_event_duration_hours: parseFloat(minHours),
         max_event_duration_hours: parseFloat(maxHours),
-        intensity_multipliers: {
-          blue: parseFloat(blueMultiplier),
-          green: parseFloat(greenMultiplier),
-          red: parseFloat(redMultiplier),
-        },
         timezone: timezone,
       });
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
@@ -111,20 +100,7 @@ function Settings() {
     }
   };
 
-  const handleResetMultipliers = async () => {
-    if (!confirm('Reset intensity multipliers to defaults?')) return;
-
-    try {
-      await settingsAPI.resetMultipliers();
-      setMessage({ type: 'success', text: 'Multipliers reset to defaults' });
-      await loadSettings();
-    } catch (err) {
-      console.error('Failed to reset multipliers:', err);
-      setMessage({ type: 'error', text: 'Failed to reset multipliers' });
-    }
-  };
-
-  const handleToggleCalendar = async (calendarId) => {
+const handleToggleCalendar = async (calendarId) => {
     try {
       await calendarAPI.toggle(calendarId);
       await loadCalendars();
@@ -279,58 +255,7 @@ function Settings() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Intensity Multipliers
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Blue (Low Intensity)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={blueMultiplier}
-                      onChange={(e) => setBlueMultiplier(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Green (Normal Intensity)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={greenMultiplier}
-                      onChange={(e) => setGreenMultiplier(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Red (High Intensity)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={redMultiplier}
-                      onChange={(e) => setRedMultiplier(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleResetMultipliers}
-                  className="mt-4 text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Reset to Defaults (0.75, 1.0, 1.25)
-                </button>
-              </div>
-
-              <div className="flex justify-end">
+<div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={isSaving}

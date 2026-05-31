@@ -173,11 +173,6 @@ export const settingsAPI = {
     const response = await apiClient.put('/settings/', settings);
     return response.data;
   },
-
-  resetMultipliers: async () => {
-    const response = await apiClient.post('/settings/reset-multipliers');
-    return response.data;
-  },
 };
 
 export default apiClient;

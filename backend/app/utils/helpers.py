@@ -72,25 +72,6 @@ def format_timestamp_iso(unix_ts, user_timezone='UTC'):
 
 
 
-def calculate_intensity_hours(event, user_settings):
-    """
-    Calculate intensity-adjusted hours for an event based on color and user multipliers.
-
-    Args:
-        event: Event model instance with duration_hours and color
-        user_settings: UserSettings model instance with intensity multipliers
-
-    Returns:
-        float: duration_hours * intensity_multiplier
-    """
-    multipliers = user_settings.get_multipliers()
-
-    # Get multiplier for event color (default to 1.0 if color not found)
-    event_color = event.color.lower() if event.color else 'green'
-    multiplier = multipliers.get(event_color, 1.0)
-
-    return event.duration_hours * multiplier
-
 
 def format_week_label(week_start_date):
     """
