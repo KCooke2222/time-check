@@ -1,17 +1,27 @@
 #!/bin/bash
-# Bash script to start both backend and frontend
+# Start backend and frontend in the background, stream logs to terminal
 # Usage: ./start-dev.sh
+# Stop with Ctrl+C
 
-echo "Starting backend and frontend..."
-
-# Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Start backend in new terminal
-gnome-terminal -- bash -c "cd '$SCRIPT_DIR/backend'; source venv/bin/activate; python run.py; exec bash" &
+cleanup() {
+    echo "Shutting down..."
+    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    exit 0
+}
+trap cleanup SIGINT SIGTERM
 
-# Wait a second then start frontend
-sleep 1
-gnome-terminal -- bash -c "cd '$SCRIPT_DIR/frontend'; npm run dev; exec bash" &
+echo "Starting backend..."
+cd "$SCRIPT_DIR/backend"
+source .venv/bin/activate
+python3 run.py 2>&1 | sed 's/^/[backend] /' &
+BACKEND_PID=$!
 
-echo "Backend and frontend started in separate terminals."
+echo "Starting frontend..."
+cd "$SCRIPT_DIR/frontend"
+npm run dev 2>&1 | sed 's/^/[frontend] /' &
+FRONTEND_PID=$!
+
+echo "Both started. Press Ctrl+C to stop."
+wait $BACKEND_PID $FRONTEND_PID

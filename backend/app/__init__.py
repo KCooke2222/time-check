@@ -41,14 +41,14 @@ def create_app(config_name='default'):
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
     app.register_blueprint(email_bp, url_prefix='/api/email')
 
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+
     # Initialize scheduler
     if not scheduler.running:
         from app.tasks.sync_job import setup_sync_job
         setup_sync_job(app, scheduler)
         scheduler.start()
-
-    # Create database tables
-    with app.app_context():
-        db.create_all()
 
     return app
