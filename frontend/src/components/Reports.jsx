@@ -91,7 +91,7 @@ function Reports() {
           <h2 className="text-2xl font-bold text-gray-800">Weekly Reports</h2>
           <button
             onClick={() => selectedWeeks.forEach(weekStart => handleWeekSelect(weekStart))}
-            className={`px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded border border-red-300 transition-colors ${selectedWeeks.length === 0 ? 'invisible' : ''}`}
+            className={`text-xs text-gray-400 hover:text-gray-600 transition-colors ${selectedWeeks.length === 0 ? 'invisible' : ''}`}
           >
             Clear Selection
           </button>
@@ -134,14 +134,14 @@ function Reports() {
           {/* Totals */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 rounded-lg border border-gray-100">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total Hours</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Hours</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {report.totals.raw_hours_total.toFixed(1)}h
               </p>
             </div>
             {selectedWeeks.length > 1 && (
               <div className="p-4 rounded-lg border border-gray-100">
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Avg / Week</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Avg / Week</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
                   {report.totals.raw_hours_avg_per_week.toFixed(1)}h
                 </p>
@@ -160,7 +160,7 @@ function Reports() {
           {/* Category Summary */}
           {report.category_summary && Object.keys(report.category_summary).length > 0 && (
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">By Category</h4>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">By Category</p>
               <div>
                 <table className="min-w-full">
                   <thead>

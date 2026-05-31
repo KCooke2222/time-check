@@ -10,7 +10,7 @@ function Toggle({ checked, onChange }) {
       onClick={onChange}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-300'}`}
     >
-      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
+      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
     </button>
   );
 }
@@ -252,7 +252,7 @@ function Settings() {
                     <>
                       <span><span className="font-medium text-gray-900">{syncStats.total_events}</span> events</span>
                       {syncStats.latest_sync_time && (
-                        <span>Last sync: <span className="font-medium text-gray-900">{new Date(syncStats.latest_sync_time).toLocaleString()}</span></span>
+                        <span>Last sync: <span className="font-medium text-gray-900">{new Date(syncStats.latest_sync_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></span>
                       )}
                     </>
                   )}

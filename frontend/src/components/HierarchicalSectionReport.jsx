@@ -56,7 +56,7 @@ function HierarchicalSectionReport({ sectionHierarchy, reportType }) {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-1 px-1">
-        <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">By Section</h4>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">By Section</p>
         {reportType === 'range' && (
           <div className="flex gap-6 text-xs text-gray-400 uppercase tracking-wide pr-1">
             <span className="w-12 text-right">Weeks</span>

@@ -540,7 +540,7 @@ function CategoryTree() {
           <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 p-3">
             <button
               onClick={() => createTreeItem('section')}
-              className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-gray-700 hover:bg-gray-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-600 hover:bg-gray-50"
               title="New folder"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -551,7 +551,7 @@ function CategoryTree() {
 
             <button
               onClick={() => createTreeItem('category')}
-              className="inline-flex items-center gap-2 rounded border border-gray-300 bg-white px-2.5 py-1.5 text-gray-700 hover:bg-gray-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-600 hover:bg-gray-50"
               title="New category"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -654,7 +654,7 @@ function CategoryTree() {
                                   setPendingDeleteId(item.index);
                                 }
                               }}
-                              className="rounded p-1 text-red-600 hover:bg-red-50"
+                              className="rounded-lg p-1 text-red-500 hover:bg-red-50"
                               title="Delete"
                               aria-label="Delete"
                             >
@@ -672,7 +672,7 @@ function CategoryTree() {
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                                  className="rounded-lg bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
                                   onClick={() => handleDelete(item.index)}
                                   onKeyDown={(event) => {
                                     if (event.key === 'Enter' || event.key === ' ') {
@@ -686,7 +686,7 @@ function CategoryTree() {
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                                  className="rounded-lg px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
                                   onClick={() => setPendingDeleteId(null)}
                                   onKeyDown={(event) => {
                                     if (event.key === 'Enter' || event.key === ' ') {

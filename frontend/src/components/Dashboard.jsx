@@ -155,7 +155,7 @@ function Dashboard() {
         {/* Section Distribution */}
         {sectionChartData.length > 0 && (
           <div className="bg-white shadow rounded-lg p-6">
-            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">By Section</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Section</p>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
@@ -181,7 +181,7 @@ function Dashboard() {
 
         {/* Category Breakdown */}
         <div className="bg-white shadow rounded-lg p-6">
-          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">By Category</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Category</p>
           <table className="min-w-full">
             <tbody className="divide-y divide-gray-50">
               {categoryChartData.slice(0, 8).map((cat, idx) => (
@@ -200,7 +200,7 @@ function Dashboard() {
 
       {/* Recent Events */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Events</h3>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Recent Events</p>
         <div>
           <table className="min-w-full">
             <thead>

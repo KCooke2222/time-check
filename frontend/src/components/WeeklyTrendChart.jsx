@@ -111,7 +111,7 @@ function WeeklyTrendChart() {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Last 8 Weeks</h3>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Last 8 Weeks</p>
         <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
           <button
             onClick={() => setView('section')}
