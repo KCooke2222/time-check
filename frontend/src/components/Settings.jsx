@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { settingsAPI, categoriesAPI, calendarAPI } from '../services/api';
-import CategoryTreeManagerFinal from './CategoryTreeManagerFinal';
+import CategoryTree from './CategoryTree';
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('general'); // 'general', 'categories', 'calendars'
@@ -265,7 +265,7 @@ const handleToggleCalendar = async (calendarId) => {
           )}
 
           {/* Categories Tab */}
-          {activeTab === 'categories' && <CategoryTreeManagerFinal />}
+          {activeTab === 'categories' && <CategoryTree />}
 
           {/* Calendars Tab */}
           {activeTab === 'calendars' && (
