@@ -230,9 +230,6 @@ const handleToggleCalendar = async (calendarId) => {
                   Timezone
                 </h3>
                 <div className="max-w-md">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Your Timezone (for week boundaries)
-                  </label>
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
@@ -307,9 +304,6 @@ const handleToggleCalendar = async (calendarId) => {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Manual Sync</h3>
                 <div className="flex items-end gap-4">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sync from how many days ago?
-                    </label>
                     <input
                       type="number"
                       min="1"

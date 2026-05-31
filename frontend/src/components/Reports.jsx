@@ -133,18 +133,6 @@ function Reports() {
       {/* Report Results */}
       {report && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">
-            Report for Selected Week{selectedWeeks.length > 1 ? 's' : ''}
-          </h3>
-
-          <div className="mb-4 text-sm text-gray-600">
-            <p>
-              Period: {parseDateLocal(report.date_range_start).toLocaleDateString()} -{' '}
-              {parseDateLocal(report.date_range_end).toLocaleDateString()}
-            </p>
-            {report.weeks_count && <p>Weeks: {report.weeks_count.toFixed(1)}</p>}
-          </div>
-
           {/* Totals */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-gray-50 p-4 rounded">
