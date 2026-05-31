@@ -222,3 +222,10 @@ frontend/.vite/
 
 # Logs
 backend/logs/
+
+# Dev artifacts (cookies, planning docs)
+backend/cookies.txt
+backend/plan.md
+frontend/package-install-note.md
+*.plan.md
+*-note.md
