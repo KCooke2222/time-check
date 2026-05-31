@@ -89,14 +89,12 @@ function Reports() {
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Weekly Reports</h2>
-          {selectedWeeks.length > 0 && (
-            <button
-              onClick={() => selectedWeeks.forEach(weekStart => handleWeekSelect(weekStart))}
-              className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded border border-red-300 transition-colors"
-            >
-              Clear Selection
-            </button>
-          )}
+          <button
+            onClick={() => selectedWeeks.forEach(weekStart => handleWeekSelect(weekStart))}
+            className={`px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded border border-red-300 transition-colors ${selectedWeeks.length === 0 ? 'invisible' : ''}`}
+          >
+            Clear Selection
+          </button>
         </div>
 
         {/* Week Calendar Selector */}
@@ -117,13 +115,13 @@ function Reports() {
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={handlePrevWeek}
-            className="px-4 py-2 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded font-medium shadow-sm"
+            className="px-4 py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
           >
             ← Previous Week
           </button>
           <button
             onClick={handleNextWeek}
-            className="px-4 py-2 text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded font-medium shadow-sm"
+            className="px-4 py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
           >
             Next Week →
           </button>
@@ -135,16 +133,16 @@ function Reports() {
         <div className="bg-white shadow rounded-lg p-6">
           {/* Totals */}
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-50 p-4 rounded">
-              <p className="text-sm text-gray-600">Total Hours</p>
-              <p className="text-2xl font-bold text-gray-800">
+            <div className="p-4 rounded-lg border border-gray-100">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total Hours</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
                 {report.totals.raw_hours_total.toFixed(1)}h
               </p>
             </div>
             {selectedWeeks.length > 1 && (
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-600">Avg / Week</p>
-                <p className="text-2xl font-bold text-gray-800">
+              <div className="p-4 rounded-lg border border-gray-100">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Avg / Week</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
                   {report.totals.raw_hours_avg_per_week.toFixed(1)}h
                 </p>
               </div>
@@ -163,52 +161,32 @@ function Reports() {
           {report.category_summary && Object.keys(report.category_summary).length > 0 && (
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-3">By Category</h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div>
+                <table className="min-w-full">
+                  <thead>
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Category
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Section
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                        Hours
-                      </th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Section</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Hours</th>
                       {selectedWeeks.length > 1 && (
                         <>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                            Weeks
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                            Avg/Week
-                          </th>
+                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Weeks</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Avg/Week</th>
                         </>
                       )}
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-50">
                     {sortCategoriesBySection(Object.entries(report.category_summary))
                       .map(([id, data]) => (
-                        <tr key={id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {data.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {data.section_name || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                            {data.raw_hours_total.toFixed(2)}h
-                          </td>
+                        <tr key={id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{data.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-400">{data.section_name || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500 text-right">{data.raw_hours_total.toFixed(2)}h</td>
                           {selectedWeeks.length > 1 && (
                             <>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                {data.weeks_present}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right">
-                                {data.raw_hours_avg?.toFixed(2)}h
-                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-400 text-right">{data.weeks_present}</td>
+                              <td className="px-4 py-3 text-sm text-gray-400 text-right">{data.raw_hours_avg?.toFixed(2)}h</td>
                             </>
                           )}
                         </tr>

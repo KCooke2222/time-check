@@ -1,9 +1,28 @@
 import { useState, useEffect } from 'react';
+import { MdSync } from 'react-icons/md';
 import { reportsAPI, calendarAPI } from '../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { sortCategoriesBySection } from '../utils/categoryHelpers';
+import { parseDateLocal } from '../utils/dateHelpers';
+import WeeklyTrendChart from './WeeklyTrendChart';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const COLORS = ['#2563EB', '#0891B2', '#0D9488', '#059669', '#4F46E5', '#7C3AED', '#0284C7', '#10B981'];
+
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white rounded-xl shadow-lg px-3 py-2 text-sm border-0 ring-1 ring-black/5">
+      {label && <p className="font-medium text-gray-700 mb-1">{label}</p>}
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.fill || entry.color }} />
+          <span className="text-gray-600">{entry.name}:</span>
+          <span className="font-medium text-gray-900">{entry.value}h</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function Dashboard() {
   const [report, setReport] = useState(null);
@@ -57,7 +76,7 @@ function Dashboard() {
 
   if (error) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
         {error}
       </div>
     );
@@ -84,10 +103,16 @@ function Dashboard() {
       rawHours: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
     }));
 
-  const sectionChartData = Object.entries(report.section_summary).map(([id, data]) => ({
-    name: data.name,
-    value: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
-  }));
+  const unsectionedHours = Object.values(report.category_summary)
+    .filter(c => !c.section_id)
+    .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
+
+  const sectionChartData = [
+    ...(report.section_hierarchy || [])
+      .filter(s => s.total_raw_hours > 0)
+      .map(s => ({ name: s.name, value: parseFloat(s.total_raw_hours.toFixed(2)) })),
+    ...(unsectionedHours > 0 ? [{ name: 'Other', value: parseFloat(unsectionedHours.toFixed(2)) }] : []),
+  ];
 
   return (
     <div className="space-y-6">
@@ -97,20 +122,17 @@ function Dashboard() {
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Current Week</h2>
             <p className="text-gray-600">
-              {new Date(report.week_start).toLocaleDateString()} -{' '}
-              {new Date(report.week_end).toLocaleDateString()}
+              {parseDateLocal(report.week_start).toLocaleDateString()} -{' '}
+              {parseDateLocal(report.week_end).toLocaleDateString()}
             </p>
           </div>
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className={`px-4 py-2 rounded font-medium ${
-              isSyncing
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            } text-white`}
+            title="Sync calendars"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
           >
-            {isSyncing ? 'Syncing...' : 'Sync Now'}
+            <MdSync size={22} className={isSyncing ? 'animate-spin-reverse' : ''} />
           </button>
         </div>
         {lastSync && (
@@ -120,20 +142,12 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-sm font-medium text-gray-500 uppercase">Total Hours</h3>
-          <p className="text-3xl font-bold text-gray-800 mt-2">
-            {(report.totals.raw_hours_total || report.totals.raw_hours || 0).toFixed(1)}h
-          </p>
-        </div>
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-sm font-medium text-gray-500 uppercase">Avg / Week</h3>
-          <p className="text-3xl font-bold text-gray-800 mt-2">
-            {(report.totals.raw_hours_avg_per_week || 0).toFixed(1)}h
-          </p>
-        </div>
+      {/* Summary Card */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Hours</h3>
+        <p className="text-3xl font-bold text-gray-900 mt-2">
+          {(report.totals.raw_hours_total || 0).toFixed(1)}h
+        </p>
       </div>
 
       {/* Charts */}
@@ -141,10 +155,8 @@ function Dashboard() {
         {/* Section Distribution */}
         {sectionChartData.length > 0 && (
           <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Time by Section
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">By Section</p>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={sectionChartData}
@@ -152,15 +164,16 @@ function Dashboard() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
-                  label={(entry) => `${entry.name}: ${entry.value}h`}
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={2}
                 >
                   {sectionChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend />
+                <Tooltip content={<ChartTooltip />} />
+                <Legend iconType="circle" iconSize={8} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -168,58 +181,45 @@ function Dashboard() {
 
         {/* Category Breakdown */}
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Category Breakdown
-          </h3>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {categoryChartData.map((cat, idx) => (
-              <div key={idx} className="border-b pb-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">{cat.name}</span>
-                  <span className="text-sm text-gray-600">{cat.rawHours}h</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">By Category</p>
+          <table className="min-w-full">
+            <tbody className="divide-y divide-gray-50">
+              {categoryChartData.slice(0, 8).map((cat, idx) => (
+                <tr key={idx}>
+                  <td className="py-2.5 text-sm text-gray-700">{cat.name}</td>
+                  <td className="py-2.5 text-sm text-gray-400 text-right">{cat.rawHours}h</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Weekly Trend */}
+      <WeeklyTrendChart />
 
       {/* Recent Events */}
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Events</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div>
+          <table className="min-w-full">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Duration
-                </th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Title</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Date</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Duration</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-50">
               {report.events.slice().reverse().slice(0, 10).map((event, idx) => (
-                <tr key={idx}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {event.title}
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm text-gray-900">{event.title}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">
+                    {event.category_name && event.category_name !== 'Uncategorized' ? event.category_name : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {event.category_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {new Date(event.start_time).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {event.duration_hours.toFixed(2)}h
-                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(event.start_time).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{event.duration_hours.toFixed(2)}h</td>
                 </tr>
               ))}
             </tbody>

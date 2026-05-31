@@ -43,7 +43,6 @@ def build_hierarchical_section_summary(section_totals, user):
             if other_data['parent_id'] == section_id:
                 child_raw = aggregate_children(other_id)
                 total_raw += child_raw
-                section_data['children'].append(other_id)
 
         section_data['total_raw_hours'] = total_raw
         return total_raw
@@ -52,7 +51,12 @@ def build_hierarchical_section_summary(section_totals, user):
     for root_id in root_sections:
         aggregate_children(root_id)
 
-    return [data for data in result.values() if data['parent_id'] is None]
+    def embed_children(section_data):
+        child_ids = [sid for sid, data in result.items() if data['parent_id'] == section_data['id']]
+        section_data['children'] = [embed_children(result[cid]) for cid in child_ids]
+        return section_data
+
+    return [embed_children(data) for data in result.values() if data['parent_id'] is None]
 
 
 def generate_range_report(user, start_iso, end_iso, include_events=False):
@@ -136,26 +140,29 @@ def generate_range_report(user, start_iso, end_iso, include_events=False):
 
     hierarchical_sections = build_hierarchical_section_summary(section_totals_for_hierarchy, user)
 
-    def add_week_stats(sections_list):
-        for section in sections_list:
-            sec_id = section['id']
-            if sec_id in section_week_presence:
-                weeks = len(section_week_presence[sec_id])
-                section['weeks_present'] = weeks
-                section['raw_hours_avg'] = section['total_raw_hours'] / weeks if weeks > 0 else 0.0
-            else:
-                section['weeks_present'] = 0
-                section['raw_hours_avg'] = 0.0
+    def add_week_stats_recursive(section):
+        if section.get('children'):
+            for child in section['children']:
+                add_week_stats_recursive(child)
+                # merge child week sets into parent
+                child_id = child['id']
+                sec_id = section['id']
+                if child_id in section_week_presence:
+                    if sec_id not in section_week_presence:
+                        section_week_presence[sec_id] = set()
+                    section_week_presence[sec_id] |= section_week_presence[child_id]
 
-    all_hierarchy_sections = []
-    def collect_all(sections_list):
-        for sec in sections_list:
-            all_hierarchy_sections.append(sec)
-            if sec['children']:
-                collect_all([s for s in hierarchical_sections if s['id'] in sec['children']])
+        sec_id = section['id']
+        if sec_id in section_week_presence:
+            weeks = len(section_week_presence[sec_id])
+            section['weeks_present'] = weeks
+            section['raw_hours_avg'] = section['total_raw_hours'] / weeks if weeks > 0 else 0.0
+        else:
+            section['weeks_present'] = 0
+            section['raw_hours_avg'] = 0.0
 
-    collect_all(hierarchical_sections)
-    add_week_stats(all_hierarchy_sections)
+    for section in hierarchical_sections:
+        add_week_stats_recursive(section)
 
     event_list = []
     if include_events:

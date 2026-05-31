@@ -128,16 +128,16 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrevMonth}
-          className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded"
+          className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
         >
           &larr;
         </button>
-        <div className="text-sm font-medium text-gray-600">
+        <div className="text-sm font-medium text-gray-500">
           {selectedWeeks.length > 0 ? `${selectedWeeks.length} week${selectedWeeks.length > 1 ? 's' : ''} selected` : 'Select weeks'}
         </div>
         <button
           onClick={handleNextMonth}
-          className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded"
+          className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
         >
           &rarr;
         </button>
@@ -146,7 +146,7 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
       {/* 3-Month Calendar Grid */}
       <div className="grid grid-cols-3 gap-4">
         {monthsData.map((monthData, monthIdx) => (
-          <div key={monthIdx} className="bg-gray-50 rounded-lg p-4">
+          <div key={monthIdx} className="rounded-lg p-3 border border-gray-100">
             {/* Month Header */}
             <h3 className="text-center text-sm font-semibold text-gray-800 mb-3">
               {monthData.date.toLocaleDateString('en-US', {
