@@ -9,7 +9,7 @@ Get up and running with Time Track in 10 minutes!
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate  # Windows
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -30,34 +30,35 @@ npm install
 4. Redirect URI: `http://localhost:5000/api/auth/callback`
 5. Save Client ID and Secret
 
-### Gemini API (Optional for AI insights)
-
-1. Go to https://makersuite.google.com/app/apikey
-2. Create free API key
-
 ## 3. Configure Environment
 
-Create `time-track\.env`:
+Copy the example and fill in your credentials:
 
-```env
-SECRET_KEY=change-this-to-random-string
-GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-secret
-GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/callback
-GEMINI_API_KEY=your-gemini-key
+```bash
+cp .env.example .env
 ```
+
+Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`. See `.env.example` for all options.
 
 ## 4. Run the App
 
-### Terminal 1 (Backend)
+### Option A — one command (Linux, opens two terminals)
+
+```bash
+./start-dev.sh
+```
+
+### Option B — manually in two terminals
+
+**Terminal 1 (Backend)**
 
 ```bash
 cd backend
-venv\Scripts\activate
+source venv/bin/activate
 python run.py
 ```
 
-### Terminal 2 (Frontend)
+**Terminal 2 (Frontend)**
 
 ```bash
 cd frontend
@@ -85,16 +86,6 @@ npm run dev
 - **Gym** - Keywords: `gym, workout, fitness`
 - **Reading** - Keywords: `read, reading, book`
 
-## Color Your Events
-
-In Google Calendar, color your events:
-
-- **Blue** = Low focus (0.75x)
-- **Green** = Normal (1.0x)
-- **Red** = High focus (1.25x)
-
-Then sync and watch the intensity-adjusted hours!
-
 ## Troubleshooting
 
 **No events showing?**
@@ -111,11 +102,3 @@ Then sync and watch the intensity-adjusted hours!
 
 - Check Flask logs for errors
 - Verify OAuth tokens are valid
-
-## Next Steps
-
-- Set up weekly email reports (configure SMTP in `.env`)
-- Customize intensity multipliers in Settings
-- Generate date range reports for semester/month analysis
-
-Enjoy tracking your time with intensity!
