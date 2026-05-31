@@ -1,16 +1,23 @@
 import os
-from datetime import timedelta
+
+def _get_database_url():
+    url = os.environ.get('DATABASE_URL') or 'sqlite:///time_track.db'
+    # Render/Railway emit postgres:// but SQLAlchemy requires postgresql://
+    if url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+    return url
+
+_DATABASE_URL = _get_database_url()
+_ENGINE_OPTIONS = {'pool_pre_ping': True, 'pool_recycle': 300}
+if _DATABASE_URL.startswith('sqlite'):
+    _ENGINE_OPTIONS['connect_args'] = {'check_same_thread': False}
 
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///time_track.db'
+    SQLALCHEMY_DATABASE_URI = _DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'connect_args': {'check_same_thread': False},
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS = _ENGINE_OPTIONS
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
