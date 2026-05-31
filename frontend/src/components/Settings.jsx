@@ -10,7 +10,6 @@ function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [availableCalendars, setAvailableCalendars] = useState([]);
-  const [showDiscoverModal, setShowDiscoverModal] = useState(false);
   const [syncStats, setSyncStats] = useState(null);
   const [lookbackDays, setLookbackDays] = useState(7);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -48,8 +47,12 @@ function Settings() {
 
   const loadCalendars = async () => {
     try {
-      const data = await calendarAPI.list();
-      setCalendars(data.calendars);
+      const [listData, discoverData] = await Promise.all([
+        calendarAPI.list(),
+        calendarAPI.discover(),
+      ]);
+      setCalendars(listData.calendars);
+      setAvailableCalendars(discoverData.calendars || []);
     } catch (err) {
       console.error('Failed to load calendars:', err);
     }
@@ -141,23 +144,10 @@ function Settings() {
     }
   };
 
-  const handleDiscoverCalendars = async () => {
-    try {
-      const data = await calendarAPI.discover();
-      setAvailableCalendars(data.calendars || []);
-      setShowDiscoverModal(true);
-    } catch (err) {
-      console.error('Failed to discover calendars:', err);
-      setMessage({ type: 'error', text: 'Failed to load available calendars' });
-    }
-  };
-
   const handleAddCalendar = async (calendarId, calendarName) => {
     try {
       await calendarAPI.add(calendarId, calendarName);
       await loadCalendars();
-      setMessage({ type: 'success', text: 'Calendar added successfully!' });
-      setShowDiscoverModal(false);
     } catch (err) {
       console.error('Failed to add calendar:', err);
       setMessage({ type: 'error', text: 'Failed to add calendar' });
@@ -286,9 +276,6 @@ function Settings() {
                     <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
                     <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-2">
-                    This determines when weeks start/end in reports (Sunday 00:00:00 to Saturday 23:59:59 in your timezone).
-                  </p>
                 </div>
               </div>
 
@@ -415,110 +402,53 @@ function Settings() {
                     {isSyncing ? 'Syncing...' : 'Sync Now'}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Events from the past {lookbackDays} days will be synced from your connected calendars.
-                </p>
               </div>
 
-              {/* Connected Calendars */}
+              {/* All Calendars */}
               <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Connected Calendars
-                  </h3>
-                  <button
-                    onClick={handleDiscoverCalendars}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-                  >
-                    Add Calendar
-                  </button>
-                </div>
-              </div>
-              {calendars.length === 0 ? (
-                <p className="text-gray-600">No calendars connected yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {calendars.map((cal) => (
-                    <div
-                      key={cal.id}
-                      className="flex justify-between items-center border border-gray-200 rounded p-4"
-                    >
-                      <div>
-                        <h4 className="font-medium text-gray-800">{cal.name}</h4>
-                        <p className="text-sm text-gray-600">{cal.calendar_id}</p>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <button
-                          onClick={() => handleToggleCalendar(cal.id)}
-                          className={`px-3 py-1 rounded text-sm font-medium ${
-                            cal.is_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {cal.is_active ? 'Active' : 'Inactive'}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCalendar(cal.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Discover Calendars Modal */}
-              {showDiscoverModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        Available Calendars
-                      </h3>
-                      <button
-                        onClick={() => setShowDiscoverModal(false)}
-                        className="text-gray-500 hover:text-gray-700 text-2xl"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                    {availableCalendars.length === 0 ? (
-                      <p className="text-gray-600">No additional calendars found.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {availableCalendars.map((cal) => (
-                          <div
-                            key={cal.calendar_id}
-                            className="flex justify-between items-center border border-gray-200 rounded p-4"
-                          >
-                            <div>
-                              <h4 className="font-medium text-gray-800">{cal.name}</h4>
-                              <p className="text-sm text-gray-600">{cal.calendar_id}</p>
-                              {cal.is_added && (
-                                <span className="text-xs text-green-600 font-medium">Already added</span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleAddCalendar(cal.calendar_id, cal.name)}
-                              disabled={cal.is_added}
-                              className={`px-4 py-2 rounded font-medium ${
-                                cal.is_added
-                                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                  : 'bg-blue-600 text-white hover:bg-blue-700'
-                              }`}
-                            >
-                              {cal.is_added ? 'Added' : 'Add'}
-                            </button>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Calendars</h3>
+                {availableCalendars.length === 0 ? (
+                  <p className="text-gray-500 text-sm">Loading calendars...</p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableCalendars.map((avail) => {
+                      const connected = calendars.find(c => c.calendar_id === avail.calendar_id);
+                      return (
+                        <div key={avail.calendar_id} className="flex justify-between items-center border border-gray-200 rounded p-4">
+                          <span className="font-medium text-gray-800">{avail.name}</span>
+                          <div className="flex items-center gap-3">
+                            {connected ? (
+                              <>
+                                <button
+                                  onClick={() => handleToggleCalendar(connected.id)}
+                                  className={`px-3 py-1 rounded text-sm font-medium ${
+                                    connected.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                  }`}
+                                >
+                                  {connected.is_active ? 'Active' : 'Inactive'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCalendar(connected.id)}
+                                  className="text-red-500 hover:text-red-700 text-sm"
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleAddCalendar(avail.calendar_id, avail.name)}
+                                className="px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
+                              >
+                                Connect
+                              </button>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
