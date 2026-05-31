@@ -229,3 +229,6 @@ backend/plan.md
 frontend/package-install-note.md
 *.plan.md
 *-note.md
+
+#Other
+.claude/
