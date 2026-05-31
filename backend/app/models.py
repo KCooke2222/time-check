@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from flask_login import UserMixin
 from app import db
+import json
 
 
 class User(UserMixin, db.Model):
