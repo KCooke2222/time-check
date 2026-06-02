@@ -16,7 +16,7 @@ function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 gap-8">
-      <span className="text-white text-2xl font-medium tracking-wide">Time Track</span>
+      <span className="text-white text-2xl font-medium tracking-wide">Time Check</span>
       <button
         onClick={handleLogin}
         disabled={isLoading}

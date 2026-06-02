@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Roboto', 'sans-serif'],
+      },
       colors: {
         'intensity-low': '#60A5FA',    // blue
         'intensity-normal': '#34D399', // green
