@@ -2,7 +2,7 @@
 
 A full-stack app that syncs with Google Calendar to show you exactly what activities you're spending your time on, through interactive reports and visualizations.
 
-**Live demo:** _coming soon_
+**Live demo:** [time-check-demo.netlify.app](https://time-check-demo.netlify.app)
 
 ## How it works
 

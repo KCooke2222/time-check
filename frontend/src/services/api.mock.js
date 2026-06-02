@@ -20,7 +20,7 @@ const CATEGORIES = [
   { id: 3,  name: 'Systems',      section_id: 2, section_name: 'school',   },
   { id: 4,  name: 'Web Dev',      section_id: 2, section_name: 'school',   },
   { id: 5,  name: 'Odin Project', section_id: 3, section_name: 'work',     },
-  { id: 6,  name: 'Job Search',   section_id: 3, section_name: 'work',     },
+  { id: 6,  name: 'Job',          section_id: 3, section_name: 'work',     },
   { id: 7,  name: 'DSA Practice', section_id: 3, section_name: 'work',     },
   { id: 8,  name: 'Gym',          section_id: 4, section_name: 'Personal', },
   { id: 9,  name: 'Reading',      section_id: 4, section_name: 'Personal', },
