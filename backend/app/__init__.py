@@ -41,9 +41,15 @@ def create_app(config_name='default'):
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
     app.register_blueprint(email_bp, url_prefix='/api/email')
 
-    # Create database tables
+    # Create database tables and run safe migrations
     with app.app_context():
         db.create_all()
+        from sqlalchemy import text
+        try:
+            db.session.execute(text('ALTER TABLE sections ADD COLUMN show_in_charts BOOLEAN DEFAULT FALSE'))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # column already exists
 
     # Initialize scheduler
     if not scheduler.running:

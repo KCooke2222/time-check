@@ -29,6 +29,7 @@ def list_sections():
             'name': section.name,
             'parent_id': section.parent_id,
             'display_order': section.display_order,
+            'show_in_charts': section.show_in_charts,
             'category_count': section.categories.count(),
             'children': [section_to_dict(child) for child in section.children.order_by(Section.display_order).all()]
         }
@@ -134,6 +135,17 @@ def update_section(section_id):
             'display_order': section.display_order
         }
     })
+
+
+@categories_bp.route('/sections/<int:section_id>/toggle-charts', methods=['POST'])
+@login_required
+def toggle_section_charts(section_id):
+    section = Section.query.filter_by(id=section_id, user_id=current_user.id).first()
+    if not section:
+        return jsonify({'error': 'Section not found'}), 404
+    section.show_in_charts = not section.show_in_charts
+    db.session.commit()
+    return jsonify({'id': section.id, 'show_in_charts': section.show_in_charts})
 
 
 @categories_bp.route('/sections/<int:section_id>', methods=['DELETE'])

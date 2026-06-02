@@ -62,11 +62,14 @@ function getWeekRanges(preset, oldestDate = null) {
   return ranges;
 }
 
-function flattenSections(sections) {
+function collectChartSections(sections) {
   const result = [];
   for (const s of sections) {
-    if (s.direct_raw_hours > 0) result.push({ name: s.name, value: s.direct_raw_hours });
-    if (s.children?.length) result.push(...flattenSections(s.children));
+    if (s.show_in_charts && s.total_raw_hours > 0) {
+      result.push({ name: s.name, value: s.total_raw_hours });
+    } else if (!s.show_in_charts && s.children?.length) {
+      result.push(...collectChartSections(s.children));
+    }
   }
   return result;
 }
@@ -117,7 +120,7 @@ function WeeklyTrendChart() {
           const row = { week: ranges[i].label };
           if (!report) return row;
 
-          flattenSections(report.section_hierarchy || []).forEach(({ name, value }) => {
+          collectChartSections(report.section_hierarchy || []).forEach(({ name, value }) => {
             row[name] = parseFloat(value.toFixed(2));
             allKeys.add(name);
           });

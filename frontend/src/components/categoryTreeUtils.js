@@ -69,6 +69,7 @@ export const buildTreeItemsFromData = (sections, categories) => {
         type: 'section',
         parent_id: section.parent_id ?? null,
         display_order: section.display_order ?? 0,
+        show_in_charts: section.show_in_charts ?? false,
       },
     };
     return sectionTreeId;

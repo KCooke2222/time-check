@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StaticTreeDataProvider, Tree, UncontrolledTreeEnvironment } from 'react-complex-tree';
 import 'react-complex-tree/lib/style-modern.css';
 import { categoriesAPI } from '../services/api';
+import { IoStar, IoStarOutline } from 'react-icons/io5';
 import {
   ROOT_ID,
   TREE_ID,
@@ -413,6 +414,23 @@ function CategoryTree() {
     }
   };
 
+  const handleToggleCharts = async (treeId, event) => {
+    event.stopPropagation();
+    const item = treeItems?.[treeId];
+    if (!item || item.metadata?.type !== 'section') return;
+    try {
+      await categoriesAPI.toggleSectionCharts(item.metadata.id);
+      const nextItems = cloneItems(treeItems);
+      nextItems[treeId] = {
+        ...nextItems[treeId],
+        metadata: { ...nextItems[treeId].metadata, show_in_charts: !nextItems[treeId].metadata.show_in_charts }
+      };
+      setItems(nextItems);
+    } catch (e) {
+      console.error('Failed to toggle charts', e);
+    }
+  };
+
   const handleDelete = async (treeId) => {
     if (!treeItems?.[treeId]?.metadata) return;
 
@@ -627,9 +645,28 @@ function CategoryTree() {
                   renderItemTitle={({ title, context, item }) => {
                     const showActions = context.isSelected && item.index !== ROOT_ID;
 
+                    const isSection = item.metadata?.type === 'section';
+                    const showInCharts = item.metadata?.show_in_charts;
+
                     return (
                       <div className="flex w-full items-center gap-2">
                         <span className="truncate">{title}</span>
+
+                        {isSection && !context.isRenaming && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => handleToggleCharts(item.index, e)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleToggleCharts(item.index, e); }}
+                            className="ml-auto flex-shrink-0 cursor-pointer"
+                            title={showInCharts ? 'Remove from charts' : 'Show in charts'}
+                          >
+                            {showInCharts
+                              ? <IoStar size={13} className="text-yellow-400" />
+                              : <IoStarOutline size={13} className="text-gray-300 hover:text-yellow-300" />
+                            }
+                          </span>
+                        )}
 
                         {showActions && !context.isRenaming && (
                           <div className="relative ml-auto flex items-center gap-1">

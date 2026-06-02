@@ -107,17 +107,22 @@ function Dashboard() {
     .filter(c => !c.section_id)
     .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
 
-  function flattenSections(sections) {
+  function collectChartSections(sections) {
     const result = [];
     for (const s of sections) {
-      if (s.direct_raw_hours > 0) result.push({ name: s.name, value: parseFloat(s.direct_raw_hours.toFixed(2)) });
-      if (s.children?.length) result.push(...flattenSections(s.children));
+      if (s.show_in_charts && s.total_raw_hours > 0) {
+        result.push({ name: s.name, value: parseFloat(s.total_raw_hours.toFixed(2)) });
+      } else if (!s.show_in_charts && s.children?.length) {
+        result.push(...collectChartSections(s.children));
+      }
     }
     return result;
   }
 
+  const anyStarred = (report.section_hierarchy || []).some(s => s.show_in_charts || s.children?.some(c => c.show_in_charts));
+
   const sectionChartData = [
-    ...flattenSections(report.section_hierarchy || []),
+    ...collectChartSections(report.section_hierarchy || []),
     ...(unsectionedHours > 0 ? [{ name: 'Other', value: parseFloat(unsectionedHours.toFixed(2)) }] : []),
   ];
 

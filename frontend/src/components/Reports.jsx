@@ -150,12 +150,20 @@ function Reports() {
           </div>
 
           {/* Hierarchical Section Summary */}
-          {report.section_hierarchy && report.section_hierarchy.length > 0 && (
-            <HierarchicalSectionReport
-              sectionHierarchy={report.section_hierarchy}
-              reportType={selectedWeeks.length > 1 ? 'range' : 'weekly'}
-            />
-          )}
+          {report.section_hierarchy && report.section_hierarchy.length > 0 && (() => {
+            const unsectionedHours = Object.values(report.category_summary || {})
+              .filter(c => !c.section_id)
+              .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
+            const otherEntry = unsectionedHours > 0
+              ? [{ id: 'other', name: 'Other', parent_id: null, show_in_charts: false, direct_raw_hours: unsectionedHours, total_raw_hours: unsectionedHours, children: [], weeks_present: 0, raw_hours_avg: 0 }]
+              : [];
+            return (
+              <HierarchicalSectionReport
+                sectionHierarchy={[...report.section_hierarchy, ...otherEntry]}
+                reportType={selectedWeeks.length > 1 ? 'range' : 'weekly'}
+              />
+            );
+          })()}
 
           {/* Category Summary */}
           {report.category_summary && Object.keys(report.category_summary).length > 0 && (

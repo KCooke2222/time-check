@@ -12,10 +12,12 @@ def build_hierarchical_section_summary(section_totals, user):
     result = {}
     for sec_id, data in section_totals.items():
         if sec_id:
+            s = section_map.get(sec_id)
             result[sec_id] = {
                 'id': sec_id,
                 'name': data['name'],
-                'parent_id': section_map[sec_id].parent_id if sec_id in section_map else None,
+                'parent_id': s.parent_id if s else None,
+                'show_in_charts': s.show_in_charts if s else False,
                 'direct_raw_hours': data['raw_hours'],
                 'total_raw_hours': data['raw_hours'],
                 'children': []
@@ -27,6 +29,7 @@ def build_hierarchical_section_summary(section_totals, user):
                 'id': section.id,
                 'name': section.name,
                 'parent_id': section.parent_id,
+                'show_in_charts': section.show_in_charts,
                 'direct_raw_hours': 0.0,
                 'total_raw_hours': 0.0,
                 'children': []

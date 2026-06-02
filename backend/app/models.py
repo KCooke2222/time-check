@@ -79,6 +79,7 @@ class Section(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('sections.id'), nullable=True, index=True)
     name = db.Column(db.String(100), nullable=False)
     display_order = db.Column(db.Integer, default=0)
+    show_in_charts = db.Column(db.Boolean, default=False)
 
     # Relationships
     categories = db.relationship('Category', backref='section', lazy='dynamic', cascade='all, delete-orphan')

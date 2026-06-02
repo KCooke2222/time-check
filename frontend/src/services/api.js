@@ -133,6 +133,11 @@ export const categoriesAPI = {
     return response.data;
   },
 
+  toggleSectionCharts: async (sectionId) => {
+    const response = await apiClient.post(`/categories/sections/${sectionId}/toggle-charts`);
+    return response.data;
+  },
+
   // Categories
   listCategories: async (sectionId = null) => {
     const params = sectionId ? { section_id: sectionId } : {};
