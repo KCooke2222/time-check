@@ -563,7 +563,7 @@ function CategoryTree() {
 
           <div
             className="p-4"
-            style={{ height: '600px' }}
+            style={{ minHeight: '200px' }}
             onClick={handleTreeAreaClick}
           >
             {treeItems[ROOT_ID].children.length === 0 ? (
@@ -584,15 +584,11 @@ function CategoryTree() {
                   <div
                     className={`rct-tree-root ${info.isFocused ? 'rct-tree-root-focus' : ''} ${
                       info.isRenaming ? 'rct-tree-root-renaming' : ''
-                    } ${info.areItemsSelected ? 'rct-tree-root-itemsselected' : ''} h-full`}
+                    } ${info.areItemsSelected ? 'rct-tree-root-itemsselected' : ''}`}
                   >
                     <div
                       {...containerProps}
-                      style={{
-                        ...containerProps.style,
-                        minHeight: '100%',
-                        height: '100%',
-                      }}
+                      style={containerProps.style}
                     >
                       {children}
                     </div>
@@ -601,11 +597,8 @@ function CategoryTree() {
                 renderItemsContainer={({ children, containerProps }) => (
                   <ul
                     {...containerProps}
-                    className="rct-tree-items-container min-h-full"
-                    style={{
-                      ...containerProps.style,
-                      minHeight: '100%',
-                    }}
+                    className="rct-tree-items-container"
+                    style={containerProps.style}
                   >
                     {children}
                   </ul>
@@ -665,37 +658,26 @@ function CategoryTree() {
 
                             {pendingDeleteId === item.index && (
                               <div
-                                className="absolute right-0 top-full z-10 mt-1 flex items-center gap-2 rounded border border-gray-200 bg-white p-2 shadow-sm"
+                                className="absolute right-0 top-full z-10 mt-1 flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2 shadow-lg"
                                 onClick={(event) => event.stopPropagation()}
                               >
-                                <span className="text-xs text-gray-600">Delete?</span>
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="rounded-lg bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                                  className="text-xs text-red-500 hover:text-red-700 cursor-pointer"
                                   onClick={() => handleDelete(item.index)}
-                                  onKeyDown={(event) => {
-                                    if (event.key === 'Enter' || event.key === ' ') {
-                                      event.preventDefault();
-                                      handleDelete(item.index);
-                                    }
-                                  }}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') handleDelete(item.index); }}
                                 >
                                   Delete
                                 </span>
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="rounded-lg px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                                  className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
                                   onClick={() => setPendingDeleteId(null)}
-                                  onKeyDown={(event) => {
-                                    if (event.key === 'Enter' || event.key === ' ') {
-                                      event.preventDefault();
-                                      setPendingDeleteId(null);
-                                    }
-                                  }}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') setPendingDeleteId(null); }}
                                 >
-                                  Cancel
+                                  ✕
                                 </span>
                               </div>
                             )}

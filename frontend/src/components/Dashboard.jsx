@@ -107,10 +107,17 @@ function Dashboard() {
     .filter(c => !c.section_id)
     .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
 
+  function flattenSections(sections) {
+    const result = [];
+    for (const s of sections) {
+      if (s.direct_raw_hours > 0) result.push({ name: s.name, value: parseFloat(s.direct_raw_hours.toFixed(2)) });
+      if (s.children?.length) result.push(...flattenSections(s.children));
+    }
+    return result;
+  }
+
   const sectionChartData = [
-    ...(report.section_hierarchy || [])
-      .filter(s => s.total_raw_hours > 0)
-      .map(s => ({ name: s.name, value: parseFloat(s.total_raw_hours.toFixed(2)) })),
+    ...flattenSections(report.section_hierarchy || []),
     ...(unsectionedHours > 0 ? [{ name: 'Other', value: parseFloat(unsectionedHours.toFixed(2)) }] : []),
   ];
 
