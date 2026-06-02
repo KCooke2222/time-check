@@ -425,7 +425,7 @@ function CategoryTree() {
         ...nextItems[treeId],
         metadata: { ...nextItems[treeId].metadata, show_in_charts: !nextItems[treeId].metadata.show_in_charts }
       };
-      setItems(nextItems);
+      setItems(nextItems, [treeId]);
     } catch (e) {
       console.error('Failed to toggle charts', e);
     }
@@ -652,13 +652,15 @@ function CategoryTree() {
                       <div className="flex w-full items-center gap-2">
                         <span className="truncate">{title}</span>
 
-                        {isSection && !context.isRenaming && (
+                        {!context.isRenaming && (
+                          <div className="relative ml-auto flex items-center gap-1">
+                        {isSection && (
                           <span
                             role="button"
                             tabIndex={0}
                             onClick={(e) => handleToggleCharts(item.index, e)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleToggleCharts(item.index, e); }}
-                            className="ml-auto flex-shrink-0 cursor-pointer"
+                            className="flex-shrink-0 cursor-pointer p-1"
                             title={showInCharts ? 'Remove from charts' : 'Show in charts'}
                           >
                             {showInCharts
@@ -668,8 +670,8 @@ function CategoryTree() {
                           </span>
                         )}
 
-                        {showActions && !context.isRenaming && (
-                          <div className="relative ml-auto flex items-center gap-1">
+                        {showActions && (
+                          <div className="relative flex items-center gap-1">
                             <span
                               role="button"
                               tabIndex={0}
@@ -718,6 +720,8 @@ function CategoryTree() {
                                 </span>
                               </div>
                             )}
+                          </div>
+                        )}
                           </div>
                         )}
                       </div>
