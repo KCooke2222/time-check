@@ -4,14 +4,20 @@ A full-stack app that syncs with Google Calendar to show you exactly what activi
 
 **Live demo:** _coming soon_
 
+## How it works
+
+You log time by adding events to Google Calendar as you normally would. Each event title includes a short tag for example, writing `odin` or `odin - react project` in the title. Time Check syncs your calendars, searches each event title for known tags, and automatically assigns it to the matching category.
+
+Categories are organized into sections, which you define once in the app. From there, the dashboard and reports show you exactly how many hours you've spent in each category and section, week by week.
+
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Backend | Flask, SQLAlchemy, PostgreSQL, APScheduler |
-| Auth | Google OAuth 2.0 |
-| Data | Google Calendar API |
-| Frontend | React, Vite, Tailwind CSS, Recharts |
+| Layer    | Tech                                       |
+| -------- | ------------------------------------------ |
+| Backend  | Flask, SQLAlchemy, PostgreSQL, APScheduler |
+| Auth     | Google OAuth 2.0                           |
+| Data     | Google Calendar API                        |
+| Frontend | React, Vite, Tailwind CSS, Recharts        |
 
 ## Architecture
 

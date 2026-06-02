@@ -11,6 +11,8 @@ import { authAPI } from "./services/api";
 import { IoSettingsSharp } from "react-icons/io5";
 import { IoChevronDown } from "react-icons/io5";
 import logo from "./assets/logo.svg";
+
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 import Dashboard from "./components/Dashboard";
 import Reports from "./components/Reports";
 import Settings from "./components/Settings";
@@ -55,6 +57,13 @@ function App() {
   }, []);
 
   const checkAuthStatus = async () => {
+    if (DEMO_MODE) {
+      const authed = localStorage.getItem('demo_authed') === 'true';
+      setIsAuthenticated(authed);
+      if (authed) setUser({ email: 'demo@timecheck.app', id: 1 });
+      setIsLoading(false);
+      return;
+    }
     try {
       const status = await authAPI.getStatus();
       setIsAuthenticated(status.authenticated);
@@ -68,6 +77,12 @@ function App() {
   };
 
   const handleLogout = async () => {
+    if (DEMO_MODE) {
+      localStorage.removeItem('demo_authed');
+      setIsAuthenticated(false);
+      setUser(null);
+      return;
+    }
     try {
       await authAPI.logout();
       setIsAuthenticated(false);
@@ -89,9 +104,14 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 relative">
         <div className="flex justify-center px-4 pt-4 pb-2">
-          <nav className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-3 flex items-center justify-between w-full max-w-[1400px]">
+          <nav className="relative bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-3 flex items-center justify-between w-full max-w-[1400px]">
+            {DEMO_MODE && (
+              <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+                <span className="text-xs font-medium text-gray-300 tracking-widest uppercase">Demo</span>
+              </div>
+            )}
             <div className="flex items-center gap-8">
               <img src={logo} alt="Time Check" className="h-5" />
               <div className="flex gap-1">
@@ -131,6 +151,7 @@ function App() {
             </div>
           </nav>
         </div>
+
 
         <main className="max-w-[1400px] mx-auto py-6 px-4">
           <Routes>

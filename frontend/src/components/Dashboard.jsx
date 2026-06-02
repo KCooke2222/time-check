@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { sortCategoriesBySection } from '../utils/categoryHelpers';
 import { parseDateLocal } from '../utils/dateHelpers';
 import WeeklyTrendChart from './WeeklyTrendChart';
+import WeekTimeGrid from './WeekTimeGrid';
 
 const COLORS = ['#2563EB', '#0891B2', '#0D9488', '#059669', '#4F46E5', '#7C3AED', '#0284C7', '#10B981'];
 
@@ -210,34 +211,7 @@ function Dashboard() {
       {/* Weekly Trend */}
       <WeeklyTrendChart />
 
-      {/* Recent Events */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Recent Events</p>
-        <div>
-          <table className="min-w-full">
-            <thead>
-              <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Title</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Date</th>
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Duration</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {report.events.slice().reverse().slice(0, 10).map((event, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm text-gray-900">{event.title}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    {event.category_name && event.category_name !== 'Uncategorized' ? event.category_name : <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(event.start_time).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{event.duration_hours.toFixed(2)}h</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <WeekTimeGrid events={report.events} weekStart={report.week_start} />
     </div>
   );
 }
