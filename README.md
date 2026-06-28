@@ -25,7 +25,7 @@ The backend follows an application factory pattern with Flask blueprints for eac
 
 Categories use a hierarchical section/category model where keyword matching assigns events to categories at sync time. Sections can be nested arbitrarily deep, and report aggregation recursively rolls up hours through the tree.
 
-The frontend is a single-page React app. Reports hit a range API endpoint that aggregates events server-side the weekly trend chart fires parallel requests per week and renders the results as a stacked bar chart filtered by user-starred sections.
+The frontend is a single-page React app providing reporting features and dashboards for viewing event timing, alongside a settings page for managing calendar sync and event categorization.
 
 ## Features
 
