@@ -67,15 +67,22 @@ fails to resolve the new import. Recreate the volume with
 `docker compose up --build --renew-anon-volumes`, or discard it first with
 `docker compose down -v`.
 
-The frontend host port is overridable in `.env` via `FRONTEND_HOST_PORT`; if you
-change it, update `CORS_ORIGINS` to match. `POSTGRES_PORT` overrides the host
-database port if it is not the default 5432.
+`POSTGRES_PORT` overrides the host database port if it is not the default 5432.
 
-`BACKEND_HOST_PORT` exists but the backend cannot actually move off host port
-5000: `frontend/src/services/api.js` hardcodes `http://localhost:5000/api`, and
-the browser — not the Vite server — makes those calls, so changing the published
-port makes every API call fail even after updating `CORS_ORIGINS` and
-`GOOGLE_REDIRECT_URI`. Moving it requires editing that constant too.
+`FRONTEND_HOST_PORT` and `BACKEND_HOST_PORT` exist, but neither service can
+actually move off its host port — 5173 and 5000 are hardcoded in the application,
+and updating `CORS_ORIGINS` and `GOOGLE_REDIRECT_URI` does not change that:
+
+- **Backend, 5000** — `frontend/src/services/api.js` hardcodes
+  `http://localhost:5000/api`, and the browser, not the Vite server, makes those
+  calls. Publishing the backend anywhere else makes every API call fail.
+- **Frontend, 5173** — `backend/app/api/auth.py` ends the OAuth callback with
+  `redirect('http://localhost:5173/dashboard')`. Publishing the frontend
+  anywhere else lets the app load and API calls succeed, then dead-ends login on
+  connection refused after Google authorizes, with the session cookie already
+  set.
+
+Moving either port requires editing the corresponding hardcoded value too.
 
 #### First-time setup: let containers reach your host Postgres
 
