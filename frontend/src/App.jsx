@@ -39,6 +39,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -66,8 +67,12 @@ function App() {
     }
     try {
       const status = await authAPI.getStatus();
-      setIsAuthenticated(status.authenticated);
-      if (status.authenticated) setUser(status.user);
+      // A live session with a dead Google grant is not usable: every calendar
+      // call would fail. Treat it as signed out so the user is offered the
+      // OAuth flow instead of a dashboard that only returns errors.
+      setNeedsReauth(Boolean(status.authenticated && status.reauth_required));
+      setIsAuthenticated(status.authenticated && !status.reauth_required);
+      if (status.authenticated && !status.reauth_required) setUser(status.user);
     } catch (error) {
       console.error("Auth check failed:", error);
       setIsAuthenticated(false);
@@ -100,7 +105,8 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) return <Login onLoginSuccess={checkAuthStatus} />;
+  if (!isAuthenticated)
+    return <Login onLoginSuccess={checkAuthStatus} needsReauth={needsReauth} />;
 
   return (
     <Router>

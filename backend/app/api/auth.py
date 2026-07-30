@@ -8,6 +8,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from authlib.integrations.requests_client import OAuth2Session
 from app import db, login_manager
 from app.models import User, UserSettings
+from app.services.google_auth import google_connection_status
 import logging
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,8 @@ def callback():
         login_user(user)
 
         # Redirect to frontend
-        return redirect('http://localhost:5173/dashboard')
+        frontend_url = current_app.config['FRONTEND_URL'].rstrip('/')
+        return redirect(f'{frontend_url}/dashboard')
 
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
@@ -137,14 +139,24 @@ def get_current_user():
 
 @auth_bp.route('/status', methods=['GET'])
 def auth_status():
-    """Check if user is authenticated"""
-    if current_user.is_authenticated:
-        return jsonify({
-            'authenticated': True,
-            'user': {
-                'id': current_user.id,
-                'email': current_user.email
-            }
-        })
-    else:
-        return jsonify({'authenticated': False})
+    """Check if the user is authenticated and their Google grant still works.
+
+    A live Flask-Login session is not enough: the stored Google refresh token
+    can be revoked or expire independently, and without checking it the UI
+    shows a signed-in user whose every calendar call fails. `reauth_required`
+    tells the frontend to send them back through the OAuth flow.
+    """
+    if not current_user.is_authenticated:
+        return jsonify({'authenticated': False, 'reauth_required': False})
+
+    google = google_connection_status(current_user)
+
+    return jsonify({
+        'authenticated': True,
+        'google_connected': google['google_connected'],
+        'reauth_required': google['reauth_required'],
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email
+        }
+    })

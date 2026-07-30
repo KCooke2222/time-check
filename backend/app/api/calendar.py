@@ -8,9 +8,9 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Calendar
 from app.services.calendar_sync import sync_user_calendars
+from app.services.google_auth import GoogleReauthRequired, get_credentials
 from app.utils.helpers import format_timestamp_iso
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,22 +39,8 @@ def list_calendars():
 def discover_calendars():
     """Discover available Google Calendars for the user"""
     try:
-        # Get user's OAuth tokens
-        tokens = current_user.get_tokens()
-        if not tokens:
-            return jsonify({'error': 'No OAuth tokens found'}), 401
-
-        # Create credentials
-        creds = Credentials(
-            token=tokens.get('access_token'),
-            refresh_token=tokens.get('refresh_token'),
-            token_uri='https://oauth2.googleapis.com/token',
-            client_id=tokens.get('client_id'),
-            client_secret=tokens.get('client_secret')
-        )
-
         # Get calendar list from Google
-        service = build('calendar', 'v3', credentials=creds)
+        service = build('calendar', 'v3', credentials=get_credentials(current_user))
         calendar_list = service.calendarList().list().execute()
 
         # Get existing calendar IDs
@@ -71,6 +57,12 @@ def discover_calendars():
 
         return jsonify({'calendars': calendars})
 
+    except GoogleReauthRequired as e:
+        logger.warning(f"Google reauth required for user {current_user.id}: {e.reason}")
+        return jsonify({
+            'error': 'Google access expired, sign in again',
+            'reauth_required': True
+        }), 401
     except Exception as e:
         logger.error(f"Error discovering calendars: {e}")
         return jsonify({'error': str(e)}), 500
@@ -182,6 +174,12 @@ def manual_sync():
             }
         })
 
+    except GoogleReauthRequired as e:
+        logger.warning(f"Google reauth required for user {current_user.id}: {e.reason}")
+        return jsonify({
+            'error': 'Google access expired, sign in again',
+            'reauth_required': True
+        }), 401
     except Exception as e:
         logger.error(f"Manual sync error: {e}")
         return jsonify({'error': str(e)}), 500

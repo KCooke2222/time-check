@@ -5,10 +5,10 @@ Pulls events from Google Calendar and syncs with local database.
 
 from datetime import datetime, timezone
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 from app import db
 from app.models import User, Calendar, Event, SyncLog, Section
 from app.services.category_matcher import find_category, get_category_priority_order
+from app.services.google_auth import GoogleReauthRequired, get_credentials
 from app.utils.helpers import google_color_id_to_name, should_filter_event, parse_google_time, to_google_time
 import logging
 
@@ -24,20 +24,11 @@ def get_calendar_service(user):
 
     Returns:
         Google Calendar API service
+
+    Raises:
+        GoogleReauthRequired: the stored Google grant is missing or dead
     """
-    tokens = user.get_tokens()
-    if not tokens:
-        raise ValueError("User has no OAuth tokens")
-
-    creds = Credentials(
-        token=tokens.get('access_token'),
-        refresh_token=tokens.get('refresh_token'),
-        token_uri='https://oauth2.googleapis.com/token',
-        client_id=tokens.get('client_id'),
-        client_secret=tokens.get('client_secret')
-    )
-
-    return build('calendar', 'v3', credentials=creds)
+    return build('calendar', 'v3', credentials=get_credentials(user))
 
 
 def sync_user_calendars(user, lookback_days=7):
@@ -62,6 +53,11 @@ def sync_user_calendars(user, lookback_days=7):
     # Get calendar service
     try:
         service = get_calendar_service(user)
+    except GoogleReauthRequired:
+        # Let this one through so callers can tell "reconnect Google" apart
+        # from a generic failure. The scheduler already logs and moves on.
+        logger.warning(f"User {user.id} must reconnect Google; skipping sync")
+        raise
     except Exception as e:
         logger.error(f"Failed to create calendar service for user {user.id}: {e}")
         return None

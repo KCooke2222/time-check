@@ -42,6 +42,11 @@ class Config:
     # CORS
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
 
+    # Where the OAuth callback sends the browser once login succeeds. Defaults
+    # to the first allowed CORS origin, which is already the frontend, so
+    # moving the frontend to another port only means updating CORS_ORIGINS.
+    FRONTEND_URL = os.environ.get('FRONTEND_URL') or CORS_ORIGINS[0].strip()
+
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True

@@ -353,6 +353,7 @@ function buildReport(startStr, endStr, includeEvents = false) {
 export const authAPI = {
   getStatus: async () => ({
     authenticated: localStorage.getItem('demo_authed') === 'true',
+    reauth_required: false,
     user: DEMO_USER,
   }),
   login:  async () => ({ authorization_url: '/?demo=true' }),
