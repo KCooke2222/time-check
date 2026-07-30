@@ -38,24 +38,37 @@ The frontend is a single-page React app providing reporting features and dashboa
 
 ## Setup
 
-Two supported ways to run the app locally. Both read configuration from a single
-`.env` at the repo root — start from `.env.example`.
-
-### Docker Compose (no local Python or Node needed)
-
-Requires a Postgres already running on your host — the Compose stack does not
-bundle one. Docker and `./start-dev.sh` talk to that same `time_track`
-database, so the two paths can never diverge.
+Two supported ways to run the app locally: Docker Compose, or natively with a
+Python venv and npm. Both read configuration from a single `.env` at the repo
+root, and both require a Postgres already running on your host — the Compose
+stack does not bundle one. Docker and `./start-dev.sh` therefore talk to the same
+`time_track` database, so the two paths can never diverge.
 
 ```bash
 cp .env.example .env   # then fill in your credentials
-docker compose up --build
 ```
+
+The required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+and `DATABASE_URL`. `.env.example` documents every option; see
+[QUICKSTART.md](QUICKSTART.md) for how to create the Google OAuth credentials.
+
+Either way, the app comes up on the same host ports:
 
 | Service  | Host port | URL                     |
 | -------- | --------- | ----------------------- |
 | Frontend | 5173      | <http://localhost:5173> |
 | Backend  | 5000      | <http://localhost:5000> |
+
+### Docker Compose (no local Python or Node needed)
+
+Docker additionally needs `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`
+set to the same database `DATABASE_URL` points at — including when updating an
+older `.env` that only has `DATABASE_URL`. `docker compose` refuses to start
+without all three.
+
+```bash
+docker compose up --build
+```
 
 Both services bind-mount their source, so edits on the host hot-reload in the
 container with no rebuild. Stop everything with `docker compose down`.
@@ -110,5 +123,40 @@ not arrive over loopback.
 
 ### Native (venv + npm)
 
-Unchanged — see [QUICKSTART.md](QUICKSTART.md). Uses `DATABASE_URL` from `.env`
-directly, and needs none of the Docker network setup above.
+Uses `DATABASE_URL` from `.env` directly, and needs none of the Docker network
+setup above. Install dependencies once:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+cd ../frontend
+npm install
+```
+
+Then start both services from the repo root:
+
+```bash
+./start-dev.sh
+```
+
+It runs the Flask backend and the Vite dev server together and streams both logs
+into one terminal, prefixed `[backend]` and `[frontend]`. Stop with Ctrl+C.
+
+Or run them yourself in two terminals:
+
+```bash
+cd backend && source .venv/bin/activate && python run.py
+```
+
+```bash
+cd frontend && npm run dev
+```
+
+## First run
+
+With the app up, see [QUICKSTART.md](QUICKSTART.md) for the Google OAuth
+credentials it needs and the walkthrough for logging in, adding calendars, and
+creating your first categories.
