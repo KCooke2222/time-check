@@ -288,7 +288,7 @@ def render_email_template(report, insights, user):
         </table>
 
         <div class="footer">
-            <p>Generated with Time Track - Intensity-Based Time Tracking</p>
+            <p>Generated with Time Check - Intensity-Based Time Tracking</p>
             <p>Powered by Google Gemini AI</p>
         </div>
     </body>
