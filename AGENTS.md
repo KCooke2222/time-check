@@ -7,8 +7,11 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 ## Running the app
 
 Two paths, both documented in `README.md` → Setup: `docker compose up --build`
-(frontend 5173, backend 5000, postgres 5434) and the native `./start-dev.sh`.
-Keep both working when touching packaging.
+(frontend 5173, backend 5000) and the native `./start-dev.sh`. Keep both working
+when touching packaging.
+
+Both share the **one** Postgres running on the host — there is no bundled
+database container, so the two paths cannot diverge.
 
 ## Sharp edges
 
@@ -22,10 +25,12 @@ Keep both working when touching packaging.
 - Under Compose, the `.env` `DATABASE_URL` is deliberately overridden: its
   `localhost` would be the backend container itself. `docker-compose.yml`
   rebuilds the URL from `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
-  against the `postgres` service.
-- The Compose Postgres is a separate, initially empty database from whatever a
-  native run points at. `create_app()` calls `db.create_all()` on boot, so the
-  schema appears automatically but the data does not.
+  against `host.docker.internal`. Those three must stay in sync with
+  `DATABASE_URL` — they describe the same database.
+- The Compose network is pinned to `172.31.250.0/24` on purpose: the host's
+  `pg_hba.conf` grants exactly that subnet, so it is not a free-floating detail.
+  Changing it silently breaks every Docker run until the host rule is changed to
+  match. First-time setup needs that host rule; see `README.md`.
 - `netlify.toml` builds the frontend with `VITE_DEMO_MODE=true`, which aliases
   the API client to `src/services/api.mock.js`. Do not break that alias.
 

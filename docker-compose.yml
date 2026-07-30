@@ -1,32 +1,19 @@
 # Development stack for Time Check.
 #
+# There is no bundled database. The containers connect out to the Postgres
+# already running on the host — the same `time_track` database ./start-dev.sh
+# uses — so the Docker and native paths can never diverge.
+#
 # Every secret comes from the root .env (see .env.example). Nothing sensitive is
 # written into this file: the Postgres credentials below are interpolated from
 # .env at `docker compose` time, they are not values stored here.
 #
-# Host ports: frontend 5173, backend 5000, postgres 5434.
+# Host ports: frontend 5173, backend 5000.
+#
+# First-time setup requires one change on the host, outside this repo: the host
+# Postgres must accept connections from this stack's subnet. See README.md.
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      # 5434 on the host: 5432 is usually taken by a locally installed Postgres,
-      # and 5433 by other local Compose stacks. Override with POSTGRES_HOST_PORT.
-      - "${POSTGRES_HOST_PORT:-5434}:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 10s
-
   backend:
     build:
       context: ./backend
@@ -37,8 +24,11 @@ services:
     environment:
       # `localhost` inside a container is the container itself, so the .env
       # DATABASE_URL cannot be used as-is. Rebuilt here from the same
-      # credentials, pointing at the `postgres` service.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # credentials, pointing at the host via the gateway address below.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
+    extra_hosts:
+      # Required on Linux: host.docker.internal does not resolve without it.
+      - "host.docker.internal:host-gateway"
     ports:
       - "${BACKEND_HOST_PORT:-5000}:5000"
     volumes:
@@ -46,9 +36,6 @@ services:
       # shadowing the image's site-packages.
       - ./backend:/app
       - /app/.venv
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/auth/status')"]
       interval: 10s
@@ -73,5 +60,11 @@ services:
     depends_on:
       - backend
 
-volumes:
-  postgres-data:
+networks:
+  default:
+    # Pinned so the host's pg_hba.conf rule can name an exact, stable subnet
+    # instead of granting Docker's whole 172.16.0.0/12 range. Declaring it also
+    # reserves it against Docker's auto-allocation.
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24

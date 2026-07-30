@@ -41,7 +41,11 @@ The frontend is a single-page React app providing reporting features and dashboa
 Two supported ways to run the app locally. Both read configuration from a single
 `.env` at the repo root — start from `.env.example`.
 
-### Docker Compose (no local Python, Node, or Postgres needed)
+### Docker Compose (no local Python or Node needed)
+
+Requires a Postgres already running on your host — the Compose stack does not
+bundle one. Docker and `./start-dev.sh` talk to that same `time_track`
+database, so the two paths can never diverge.
 
 ```bash
 cp .env.example .env   # then fill in your credentials
@@ -52,21 +56,40 @@ docker compose up --build
 | -------- | --------- | ----------------------- |
 | Frontend | 5173      | <http://localhost:5173> |
 | Backend  | 5000      | <http://localhost:5000> |
-| Postgres | 5434      | `localhost:5434`        |
 
-Postgres runs as its own service with a named volume (`postgres-data`), so data
-survives `docker compose down`. The backend waits for the database healthcheck
-before starting. Both application services bind-mount their source, so edits on
-the host hot-reload in the container with no rebuild.
+Both services bind-mount their source, so edits on the host hot-reload in the
+container with no rebuild. Stop everything with `docker compose down`.
 
-Host ports are overridable in `.env` via `FRONTEND_HOST_PORT`,
-`BACKEND_HOST_PORT`, and `POSTGRES_HOST_PORT`. If you change the frontend or
-backend port, update `CORS_ORIGINS` and `GOOGLE_REDIRECT_URI` to match.
+Host ports are overridable in `.env` via `FRONTEND_HOST_PORT` and
+`BACKEND_HOST_PORT`; if you change either, update `CORS_ORIGINS` and
+`GOOGLE_REDIRECT_URI` to match. `POSTGRES_PORT` overrides the host database
+port if it is not the default 5432.
 
-Stop everything with `docker compose down` (add `-v` to also drop the database
-volume).
+#### First-time setup: let containers reach your host Postgres
+
+`localhost` inside a container is the container itself, so the backend reaches
+the host database via `host.docker.internal` (mapped to `host-gateway`, which
+is required on Linux). A default Postgres install will refuse that connection
+with:
+
+```
+FATAL:  no pg_hba.conf entry for host "172.31.250.2", user "...", database "time_track"
+```
+
+The stack pins its Docker network to `172.31.250.0/24` so you can grant exactly
+that subnet and nothing more. Add this line to your `pg_hba.conf` (on Debian and
+Ubuntu, `/etc/postgresql/16/main/pg_hba.conf`):
+
+```
+host    time_track    <your-db-user>    172.31.250.0/24    scram-sha-256
+```
+
+Then reload: `sudo systemctl reload postgresql`. Use `md5` instead of
+`scram-sha-256` if that is what your server's `password_encryption` is set to.
+Also confirm `listen_addresses` is not loopback-only, since the container does
+not arrive over loopback.
 
 ### Native (venv + npm)
 
-Unchanged — see [QUICKSTART.md](QUICKSTART.md). This path uses whatever
-`DATABASE_URL` in `.env` points at, not the Compose Postgres service.
+Unchanged — see [QUICKSTART.md](QUICKSTART.md). Uses `DATABASE_URL` from `.env`
+directly, and needs none of the Docker network setup above.

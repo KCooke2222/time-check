@@ -42,21 +42,36 @@ Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, and `G
 
 ## 4. Run the App
 
-### Option A — Docker Compose (recommended; no local Python/Node/Postgres)
+### Option A — Docker Compose (recommended; no local Python or Node)
 
 ```bash
 docker compose up --build
 ```
 
-Brings up three services: `frontend` on host port **5173**, `backend` on **5000**,
-and `postgres` on **5434** (its data lives in the named volume `postgres-data`).
-Source is bind-mounted, so edits hot-reload without a rebuild. Stop with
-`docker compose down`.
+Brings up two services: `frontend` on host port **5173** and `backend` on
+**5000**. Source is bind-mounted, so edits hot-reload without a rebuild. Stop
+with `docker compose down`.
 
-The Compose stack ignores the `DATABASE_URL` in `.env` — `localhost` inside a
-container is the container itself — and instead builds a connection string from
-`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` pointed at the `postgres`
-service. Set those three in `.env`.
+There is no bundled database. The containers connect out to the Postgres already
+running on your host, so **Docker and `./start-dev.sh` share one `time_track`
+database** — no divergence between the two paths. Keep your local Postgres
+running.
+
+The stack cannot reuse the `DATABASE_URL` in `.env` as-is, because `localhost`
+inside a container is the container itself. It rebuilds the URL from
+`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` pointed at
+`host.docker.internal`, so set those three in `.env` to match `DATABASE_URL`.
+
+**One-time host setup:** Postgres must accept connections from the stack's
+subnet, or the backend will restart-loop with `no pg_hba.conf entry for host
+"172.31.250.2"`. Add to `pg_hba.conf` (`/etc/postgresql/16/main/pg_hba.conf` on
+Debian/Ubuntu) and reload with `sudo systemctl reload postgresql`:
+
+```
+host    time_track    <your-db-user>    172.31.250.0/24    scram-sha-256
+```
+
+See README.md for the full explanation.
 
 ### Option B — one command (Linux, opens two terminals)
 
