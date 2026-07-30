@@ -38,4 +38,35 @@ The frontend is a single-page React app providing reporting features and dashboa
 
 ## Setup
 
-See [QUICKSTART.md](QUICKSTART.md).
+Two supported ways to run the app locally. Both read configuration from a single
+`.env` at the repo root — start from `.env.example`.
+
+### Docker Compose (no local Python, Node, or Postgres needed)
+
+```bash
+cp .env.example .env   # then fill in your credentials
+docker compose up --build
+```
+
+| Service  | Host port | URL                     |
+| -------- | --------- | ----------------------- |
+| Frontend | 5173      | <http://localhost:5173> |
+| Backend  | 5000      | <http://localhost:5000> |
+| Postgres | 5434      | `localhost:5434`        |
+
+Postgres runs as its own service with a named volume (`postgres-data`), so data
+survives `docker compose down`. The backend waits for the database healthcheck
+before starting. Both application services bind-mount their source, so edits on
+the host hot-reload in the container with no rebuild.
+
+Host ports are overridable in `.env` via `FRONTEND_HOST_PORT`,
+`BACKEND_HOST_PORT`, and `POSTGRES_HOST_PORT`. If you change the frontend or
+backend port, update `CORS_ORIGINS` and `GOOGLE_REDIRECT_URI` to match.
+
+Stop everything with `docker compose down` (add `-v` to also drop the database
+volume).
+
+### Native (venv + npm)
+
+Unchanged — see [QUICKSTART.md](QUICKSTART.md). This path uses whatever
+`DATABASE_URL` in `.env` points at, not the Compose Postgres service.

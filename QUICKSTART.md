@@ -42,13 +42,29 @@ Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, and `G
 
 ## 4. Run the App
 
-### Option A — one command (Linux, opens two terminals)
+### Option A — Docker Compose (recommended; no local Python/Node/Postgres)
+
+```bash
+docker compose up --build
+```
+
+Brings up three services: `frontend` on host port **5173**, `backend` on **5000**,
+and `postgres` on **5434** (its data lives in the named volume `postgres-data`).
+Source is bind-mounted, so edits hot-reload without a rebuild. Stop with
+`docker compose down`.
+
+The Compose stack ignores the `DATABASE_URL` in `.env` — `localhost` inside a
+container is the container itself — and instead builds a connection string from
+`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` pointed at the `postgres`
+service. Set those three in `.env`.
+
+### Option B — one command (Linux, opens two terminals)
 
 ```bash
 ./start-dev.sh
 ```
 
-### Option B — manually in two terminals
+### Option C — manually in two terminals
 
 **Terminal 1 (Backend)**
 
