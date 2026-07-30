@@ -38,7 +38,12 @@ Copy the example and fill in your credentials:
 cp .env.example .env
 ```
 
-Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`. See `.env.example` for all options.
+Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `DATABASE_URL`. See `.env.example` for all options.
+
+The Docker path (Option A below) additionally needs `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, and `POSTGRES_DB` set to the same database `DATABASE_URL`
+points at — including if you are updating an older `.env` that only has
+`DATABASE_URL`. `docker compose` refuses to start without all three.
 
 ## 4. Run the App
 
@@ -61,6 +66,7 @@ The stack cannot reuse the `DATABASE_URL` in `.env` as-is, because `localhost`
 inside a container is the container itself. It rebuilds the URL from
 `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` pointed at
 `host.docker.internal`, so set those three in `.env` to match `DATABASE_URL`.
+Compose fails with a message naming the missing variable if any is unset.
 
 **One-time host setup:** Postgres must accept connections from the stack's
 subnet, or the backend will restart-loop with `no pg_hba.conf entry for host

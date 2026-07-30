@@ -60,10 +60,22 @@ docker compose up --build
 Both services bind-mount their source, so edits on the host hot-reload in the
 container with no rebuild. Stop everything with `docker compose down`.
 
-Host ports are overridable in `.env` via `FRONTEND_HOST_PORT` and
-`BACKEND_HOST_PORT`; if you change either, update `CORS_ORIGINS` and
-`GOOGLE_REDIRECT_URI` to match. `POSTGRES_PORT` overrides the host database
-port if it is not the default 5432.
+The container's `node_modules` lives in an anonymous volume that survives a
+container rebuild, so after changing a dependency in `frontend/package.json`,
+plain `docker compose up --build` still starts with the old packages and Vite
+fails to resolve the new import. Recreate the volume with
+`docker compose up --build --renew-anon-volumes`, or discard it first with
+`docker compose down -v`.
+
+The frontend host port is overridable in `.env` via `FRONTEND_HOST_PORT`; if you
+change it, update `CORS_ORIGINS` to match. `POSTGRES_PORT` overrides the host
+database port if it is not the default 5432.
+
+`BACKEND_HOST_PORT` exists but the backend cannot actually move off host port
+5000: `frontend/src/services/api.js` hardcodes `http://localhost:5000/api`, and
+the browser — not the Vite server — makes those calls, so changing the published
+port makes every API call fail even after updating `CORS_ORIGINS` and
+`GOOGLE_REDIRECT_URI`. Moving it requires editing that constant too.
 
 #### First-time setup: let containers reach your host Postgres
 

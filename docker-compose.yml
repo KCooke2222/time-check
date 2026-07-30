@@ -6,9 +6,12 @@
 #
 # Every secret comes from the root .env (see .env.example). Nothing sensitive is
 # written into this file: the Postgres credentials below are interpolated from
-# .env at `docker compose` time, they are not values stored here.
+# .env at `docker compose` time, they are not values stored here. Only the
+# backend loads the whole .env; the frontend gets just the one variable it uses.
 #
-# Host ports: frontend 5173, backend 5000.
+# Host ports: frontend 5173, backend 5000. The backend's host port is fixed:
+# frontend/src/services/api.js hardcodes http://localhost:5000/api and the
+# browser, not the Vite server, makes those calls.
 #
 # First-time setup requires one change on the host, outside this repo: the host
 # Postgres must accept connections from this stack's subnet. See README.md.
@@ -25,7 +28,12 @@ services:
       # `localhost` inside a container is the container itself, so the .env
       # DATABASE_URL cannot be used as-is. Rebuilt here from the same
       # credentials, pointing at the host via the gateway address below.
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
+      #
+      # The three credential parts are required rather than defaulted: an
+      # upgraded .env that only carries DATABASE_URL would otherwise build
+      # `postgresql://:@host.docker.internal:5432/` and fail as a confusing
+      # auth error in a restart loop instead of failing here.
+      DATABASE_URL: postgresql://${POSTGRES_USER:?set POSTGRES_USER in .env, matching DATABASE_URL}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env, matching DATABASE_URL}@host.docker.internal:${POSTGRES_PORT:-5432}/${POSTGRES_DB:?set POSTGRES_DB in .env, matching DATABASE_URL}
     extra_hosts:
       # Required on Linux: host.docker.internal does not resolve without it.
       - "host.docker.internal:host-gateway"
@@ -48,8 +56,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      # Deliberately narrowed instead of loading the whole .env: VITE_DEMO_MODE
+      # is the only variable the frontend consumes, so the backend's secrets
+      # have no reason to exist in this container's environment.
+      VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
     ports:
       - "${FRONTEND_HOST_PORT:-5173}:5173"
     volumes:
