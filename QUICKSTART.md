@@ -4,12 +4,15 @@ Get up and running with Time Track in 10 minutes!
 
 ## 1. Install Dependencies
 
+Skip this step entirely if you plan to run with Docker (Option A below) — the
+containers install their own dependencies.
+
 ### Backend
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -42,8 +45,9 @@ Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGL
 
 The Docker path (Option A below) additionally needs `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, and `POSTGRES_DB` set to the same database `DATABASE_URL`
-points at — including if you are updating an older `.env` that only has
-`DATABASE_URL`. `docker compose` refuses to start without all three.
+points at — including when updating an older `.env` that only has
+`DATABASE_URL`. `docker compose` refuses to start without all three; see
+`.env.example` for why.
 
 ## 4. Run the App
 
@@ -62,22 +66,10 @@ running on your host, so **Docker and `./start-dev.sh` share one `time_track`
 database** — no divergence between the two paths. Keep your local Postgres
 running.
 
-The stack cannot reuse the `DATABASE_URL` in `.env` as-is, because `localhost`
-inside a container is the container itself. It rebuilds the URL from
-`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` pointed at
-`host.docker.internal`, so set those three in `.env` to match `DATABASE_URL`.
-Compose fails with a message naming the missing variable if any is unset.
-
-**One-time host setup:** Postgres must accept connections from the stack's
-subnet, or the backend will restart-loop with `no pg_hba.conf entry for host
-"172.31.250.2"`. Add to `pg_hba.conf` (`/etc/postgresql/16/main/pg_hba.conf` on
-Debian/Ubuntu) and reload with `sudo systemctl reload postgresql`:
-
-```
-host    time_track    <your-db-user>    172.31.250.0/24    scram-sha-256
-```
-
-See README.md for the full explanation.
+**First-time Docker use needs one line added to the host's `pg_hba.conf`**, or
+the backend restart-loops on `no pg_hba.conf entry for host "172.31.250.2"`. See
+[README.md → Docker Compose](README.md#docker-compose-no-local-python-or-node-needed)
+for that line and the rest of the Docker details.
 
 ### Option B — one command (Linux, opens two terminals)
 
@@ -91,7 +83,7 @@ See README.md for the full explanation.
 
 ```bash
 cd backend
-source venv/bin/activate
+source .venv/bin/activate
 python run.py
 ```
 
