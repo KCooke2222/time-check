@@ -18,15 +18,14 @@ database container, so the two paths cannot diverge.
 - All config lives in one gitignored `.env` at the repo root — `backend/run.py`
   finds it by walking up from `backend/`. `.env.example` is the authoritative
   list of variables; add placeholders there, never real values.
-- Both host ports are hardcoded in the app, so both services must be published
-  on them regardless of how they run — the `FRONTEND_HOST_PORT` and
-  `BACKEND_HOST_PORT` knobs cannot move them alone.
+- The backend host port is hardcoded in the app, so the backend must be
+  published on 5000 however it runs — `BACKEND_HOST_PORT` cannot move it alone.
   `frontend/src/services/api.js` hardcodes `http://localhost:5000/api` as the
   API base, and calls are made by the browser, not by the Vite server (the
   `/api` proxy in `vite.config.js` is unused by the app).
-  `backend/app/api/auth.py` ends the OAuth callback with a redirect to
-  `http://localhost:5173/dashboard`, so a moved frontend port breaks login only
-  after Google authorizes, not at page load.
+  `FRONTEND_HOST_PORT` does move the frontend, but the new origin has to be in
+  `CORS_ORIGINS`: `backend/config.py` derives `FRONTEND_URL` — where the OAuth
+  callback sends the browser — from its first entry.
 - Under Compose, the `.env` `DATABASE_URL` is deliberately overridden: its
   `localhost` would be the backend container itself. `docker-compose.yml`
   rebuilds the URL from `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`

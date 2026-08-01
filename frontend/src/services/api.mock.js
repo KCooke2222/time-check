@@ -6,6 +6,10 @@
 // ── Demo user ──────────────────────────────────────────────────────────────
 const DEMO_USER = { id: 1, email: 'demo@timecheck.app' };
 
+// Demo mode never talks to Google, so nothing can ever ask for a reauth. The
+// export exists to keep the api.js interface complete.
+export const setReauthHandler = () => {};
+
 // ── Sections & Categories ──────────────────────────────────────────────────
 const SECTIONS = {
   1: { id: 1, name: 'working',  parent_id: null, show_in_charts: false },

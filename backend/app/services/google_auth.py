@@ -40,13 +40,41 @@ class GoogleReauthRequired(Exception):
         self.reason = reason
 
 
-def _credentials_from(tokens):
-    return Credentials(
+class _UserCredentials(Credentials):
+    """Credentials that report a dead Google grant as GoogleReauthRequired.
+
+    Refreshing is not confined to `get_credentials`: the API client refreshes
+    lazily from inside `.execute()` whenever Google answers 401, which is what
+    a revoked grant looks like while the recorded expiry is still in the
+    future. Translating inside `refresh` covers both moments, so every caller
+    sees one exception type no matter where the grant died.
+    """
+
+    def __init__(self, *args, user_id=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_id = user_id
+
+    def refresh(self, request):
+        try:
+            super().refresh(request)
+        except RefreshError as e:
+            # google-auth marks the failures it considers transient (Google
+            # 5xx, rate limits) as retryable. Those say nothing about the
+            # grant, and signing in again cannot fix them.
+            if getattr(e, 'retryable', False):
+                raise
+            logger.warning(f"Google refresh token rejected for user {self.user_id}: {e}")
+            raise GoogleReauthRequired('expired') from e
+
+
+def _credentials_from(tokens, user_id=None):
+    return _UserCredentials(
         token=tokens.get('access_token'),
         refresh_token=tokens.get('refresh_token'),
         token_uri=TOKEN_URI,
         client_id=tokens.get('client_id'),
-        client_secret=tokens.get('client_secret')
+        client_secret=tokens.get('client_secret'),
+        user_id=user_id
     )
 
 
@@ -71,7 +99,8 @@ def get_credentials(user):
     Raises:
         GoogleReauthRequired: the user never connected Google, or the stored
             refresh token no longer works. Both are resolved only by sending
-            the user back through the OAuth flow.
+            the user back through the OAuth flow. The returned credentials
+            raise it too if the grant dies later, mid-API-call.
         GoogleAuthError: Google could not be reached. Not proof the grant is
             dead, so callers should surface it as a plain failure.
     """
@@ -79,15 +108,12 @@ def get_credentials(user):
     if not tokens or not tokens.get('refresh_token'):
         raise GoogleReauthRequired('not_connected')
 
-    creds = _credentials_from(tokens)
+    creds = _credentials_from(tokens, user.id)
     if not _needs_refresh(tokens):
         return creds
 
     try:
         creds.refresh(Request())
-    except RefreshError as e:
-        logger.warning(f"Google refresh token rejected for user {user.id}: {e}")
-        raise GoogleReauthRequired('expired') from e
     except GoogleAuthError as e:
         logger.error(f"Could not reach Google to refresh user {user.id}: {e}")
         raise

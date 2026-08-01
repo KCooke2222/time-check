@@ -18,6 +18,22 @@ logger = logging.getLogger(__name__)
 calendar_bp = Blueprint('calendar', __name__)
 
 
+@calendar_bp.errorhandler(GoogleReauthRequired)
+def handle_reauth_required(e):
+    """Answer any dead Google grant in this blueprint with a 401.
+
+    Every route here talks to Google, and the grant can die at any point in a
+    call, so this lives on the blueprint rather than in each route.
+    """
+    logger.warning(
+        f"Google reauth required for user {getattr(current_user, 'id', None)}: {e.reason}"
+    )
+    return jsonify({
+        'error': 'Google access expired, sign in again',
+        'reauth_required': True
+    }), 401
+
+
 @calendar_bp.route('/list', methods=['GET'])
 @login_required
 def list_calendars():
@@ -57,12 +73,8 @@ def discover_calendars():
 
         return jsonify({'calendars': calendars})
 
-    except GoogleReauthRequired as e:
-        logger.warning(f"Google reauth required for user {current_user.id}: {e.reason}")
-        return jsonify({
-            'error': 'Google access expired, sign in again',
-            'reauth_required': True
-        }), 401
+    except GoogleReauthRequired:
+        raise
     except Exception as e:
         logger.error(f"Error discovering calendars: {e}")
         return jsonify({'error': str(e)}), 500
@@ -174,12 +186,8 @@ def manual_sync():
             }
         })
 
-    except GoogleReauthRequired as e:
-        logger.warning(f"Google reauth required for user {current_user.id}: {e.reason}")
-        return jsonify({
-            'error': 'Google access expired, sign in again',
-            'reauth_required': True
-        }), 401
+    except GoogleReauthRequired:
+        raise
     except Exception as e:
         logger.error(f"Manual sync error: {e}")
         return jsonify({'error': str(e)}), 500

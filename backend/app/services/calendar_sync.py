@@ -99,6 +99,13 @@ def sync_user_calendars(user, lookback_days=7):
             events_updated += stats['updated']
             events_deleted += stats['deleted']
 
+        except GoogleReauthRequired:
+            # The grant can also die mid-sync, once the access token Google
+            # already handed out stops being honoured. Swallowing it here
+            # would report a successful sync that moved nothing.
+            logger.warning(f"User {user.id} must reconnect Google; aborting sync")
+            db.session.rollback()
+            raise
         except Exception as e:
             logger.error(f"Error syncing calendar {calendar.id}: {e}")
             db.session.rollback()

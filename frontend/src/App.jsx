@@ -7,7 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { authAPI } from "./services/api";
+import { authAPI, setReauthHandler } from "./services/api";
 import { IoSettingsSharp } from "react-icons/io5";
 import { IoChevronDown } from "react-icons/io5";
 import logo from "./assets/logo.svg";
@@ -45,6 +45,17 @@ function App() {
 
   useEffect(() => {
     checkAuthStatus();
+  }, []);
+
+  useEffect(() => {
+    // A grant that dies mid-session shows up as a 401 on whichever call runs
+    // next, not on the startup status check, so take that answer too.
+    setReauthHandler(() => {
+      setNeedsReauth(true);
+      setIsAuthenticated(false);
+      setUser(null);
+    });
+    return () => setReauthHandler(null);
   }, []);
 
   useEffect(() => {
