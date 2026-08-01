@@ -9,9 +9,10 @@
 # .env at `docker compose` time, they are not values stored here. Only the
 # backend loads the whole .env; the frontend gets just the one variable it uses.
 #
-# Host ports: frontend 5173, backend 5000. Both are fixed, because both are
-# hardcoded in the app — the API base URL in frontend/src/services/api.js and the
-# OAuth callback redirect in backend/app/api/auth.py. See README.md.
+# Host ports: frontend 5173, backend 5000. FRONTEND_HOST_PORT does move the
+# frontend, as long as CORS_ORIGINS names the new origin — the OAuth callback
+# redirect follows it. The backend is fixed, because frontend/src/services/api.js
+# hardcodes the API base URL. See README.md.
 #
 # First-time setup requires one change on the host, outside this repo: the host
 # Postgres must accept connections from this stack's subnet. See README.md.
