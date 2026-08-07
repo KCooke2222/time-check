@@ -1,0 +1,12 @@
+# Never ship secrets or host-built artifacts into the image.
+.env
+.env.*
+node_modules/
+dist/
+.vite/
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log*
+*-note.md

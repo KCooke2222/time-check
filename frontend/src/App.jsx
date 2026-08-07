@@ -7,7 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { authAPI } from "./services/api";
+import { authAPI, setReauthHandler } from "./services/api";
 import { IoSettingsSharp } from "react-icons/io5";
 import { IoChevronDown } from "react-icons/io5";
 import logo from "./assets/logo.svg";
@@ -39,11 +39,23 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
     checkAuthStatus();
+  }, []);
+
+  useEffect(() => {
+    // A grant that dies mid-session shows up as a 401 on whichever call runs
+    // next, not on the startup status check, so take that answer too.
+    setReauthHandler(() => {
+      setNeedsReauth(true);
+      setIsAuthenticated(false);
+      setUser(null);
+    });
+    return () => setReauthHandler(null);
   }, []);
 
   useEffect(() => {
@@ -66,8 +78,12 @@ function App() {
     }
     try {
       const status = await authAPI.getStatus();
-      setIsAuthenticated(status.authenticated);
-      if (status.authenticated) setUser(status.user);
+      // A live session with a dead Google grant is not usable: every calendar
+      // call would fail. Treat it as signed out so the user is offered the
+      // OAuth flow instead of a dashboard that only returns errors.
+      setNeedsReauth(Boolean(status.authenticated && status.reauth_required));
+      setIsAuthenticated(status.authenticated && !status.reauth_required);
+      if (status.authenticated && !status.reauth_required) setUser(status.user);
     } catch (error) {
       console.error("Auth check failed:", error);
       setIsAuthenticated(false);
@@ -100,7 +116,8 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) return <Login onLoginSuccess={checkAuthStatus} />;
+  if (!isAuthenticated)
+    return <Login onLoginSuccess={checkAuthStatus} needsReauth={needsReauth} />;
 
   return (
     <Router>

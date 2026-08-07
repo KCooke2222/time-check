@@ -1,0 +1,17 @@
+# Never ship secrets or host-built artifacts into the image.
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.git/
+.gitignore
+*.db
+logs/
+cookies.txt
+plan.md
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

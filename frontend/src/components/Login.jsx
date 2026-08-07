@@ -3,7 +3,7 @@ import { authAPI } from "../services/api";
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
-function Login({ onLoginSuccess }) {
+function Login({ onLoginSuccess, needsReauth = false }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -26,6 +26,13 @@ function Login({ onLoginSuccess }) {
       <span className="text-white text-2xl font-medium tracking-wide">
         Time Check
       </span>
+
+      {needsReauth && !DEMO_MODE && (
+        <p className="text-amber-400 text-sm -mt-4 text-center max-w-xs">
+          Your Google access expired. Sign in again to keep syncing your
+          calendar.
+        </p>
+      )}
 
       {DEMO_MODE ? (
         <div className="flex flex-col items-center gap-3">

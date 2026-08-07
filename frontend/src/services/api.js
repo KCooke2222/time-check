@@ -15,6 +15,26 @@ const apiClient = axios.create({
   },
 });
 
+// The Google grant can die while the app is open, so the reauth signal is not
+// only in the /auth/status answer taken at startup: any call can come back 401
+// with reauth_required. Route those to whoever is holding the auth state
+// instead of leaving the user on a dashboard that only returns errors.
+let reauthHandler = null;
+
+export const setReauthHandler = (handler) => {
+  reauthHandler = handler;
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && error.response.data?.reauth_required) {
+      reauthHandler?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
 // ==================== AUTH ====================
 
 export const authAPI = {

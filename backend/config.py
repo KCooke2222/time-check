@@ -1,5 +1,14 @@
 import os
 
+DEFAULT_FRONTEND_ORIGIN = 'http://localhost:5173'
+
+def _get_cors_origins():
+    # An empty or blank-entry CORS_ORIGINS must not survive: the first entry is
+    # also the post-login redirect target, and '' would redirect to a path on
+    # the backend itself.
+    origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', '').split(',') if o.strip()]
+    return origins or [DEFAULT_FRONTEND_ORIGIN]
+
 def _get_database_url():
     url = os.environ.get('DATABASE_URL') or 'sqlite:///time_track.db'
     # Render/Railway emit postgres:// but SQLAlchemy requires postgresql://
@@ -40,7 +49,12 @@ class Config:
     SYNC_LOOKBACK_DAYS = int(os.environ.get('SYNC_LOOKBACK_DAYS') or 7)
 
     # CORS
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
+    CORS_ORIGINS = _get_cors_origins()
+
+    # Where the OAuth callback sends the browser once login succeeds. Defaults
+    # to the first allowed CORS origin, which is already the frontend, so
+    # moving the frontend to another port only means updating CORS_ORIGINS.
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', '').strip() or CORS_ORIGINS[0]
 
 class DevelopmentConfig(Config):
     """Development configuration"""

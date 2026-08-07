@@ -1,26 +1,13 @@
 # Quick Start Guide
 
-Get up and running with Time Track in 10 minutes!
+Get up and running with Time Check in 10 minutes!
 
-## 1. Install Dependencies
+This guide covers the Google credentials you need and your first few minutes in
+the app. For how to install and run it, see
+[README.md → Setup](README.md#setup) — that is the one place run instructions
+live.
 
-### Backend
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-```
-
-## 2. Get API Keys
+## 1. Get API Keys
 
 ### Google OAuth (Required)
 
@@ -30,49 +17,18 @@ npm install
 4. Redirect URI: `http://localhost:5000/api/auth/callback`
 5. Save Client ID and Secret
 
-## 3. Configure Environment
+Put the Client ID and Secret in your `.env` as `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET`.
 
-Copy the example and fill in your credentials:
+## 2. First Use
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` — the required fields are `SECRET_KEY`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`. See `.env.example` for all options.
-
-## 4. Run the App
-
-### Option A — one command (Linux, opens two terminals)
-
-```bash
-./start-dev.sh
-```
-
-### Option B — manually in two terminals
-
-**Terminal 1 (Backend)**
-
-```bash
-cd backend
-source venv/bin/activate
-python run.py
-```
-
-**Terminal 2 (Frontend)**
-
-```bash
-cd frontend
-npm run dev
-```
-
-## 5. First Use
-
-1. Open http://localhost:5173
-2. Click "Login with Google"
-3. Authorize calendar access
-4. Go to Settings → Calendars → Add your calendars
-5. Go to Settings → Categories → Create sections & categories
-6. Click "Sync Now" on Dashboard
+1. Start the app (see [README.md → Setup](README.md#setup))
+2. Open http://localhost:5173
+3. Click "Login with Google"
+4. Authorize calendar access
+5. Go to Settings → Calendars → Add your calendars
+6. Go to Settings → Categories → Create sections & categories
+7. Click "Sync Now" on Dashboard
 
 ## Example Categories
 
