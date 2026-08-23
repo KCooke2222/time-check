@@ -1,60 +1,106 @@
-# Quick Start Guide
+# Quick Start
 
-Get up and running with Time Check in 10 minutes!
+Get Time Check running locally in about 10 minutes.
 
-This guide covers the Google credentials you need and your first few minutes in
-the app. For how to install and run it, see
-[README.md → Setup](README.md#setup) — that is the one place run instructions
-live.
+## 1. Google OAuth credentials
 
-## 1. Get API Keys
+1. Go to <https://console.cloud.google.com/> and create a project
+2. Enable the **Google Calendar API**
+3. Create an **OAuth 2.0 Client ID** (type: Web application)
+4. Add redirect URI: `http://localhost:5000/api/auth/callback`
 
-### Google OAuth (Required)
+## 2. Configure
 
-1. Go to https://console.cloud.google.com/
-2. Create project → Enable Calendar API
-3. Create OAuth 2.0 Client ID
-4. Redirect URI: `http://localhost:5000/api/auth/callback`
-5. Save Client ID and Secret
+```bash
+cp .env.example .env
+```
 
-Put the Client ID and Secret in your `.env` as `GOOGLE_CLIENT_ID` and
-`GOOGLE_CLIENT_SECRET`.
+Fill in `SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and
+`DATABASE_URL`. `.env.example` documents every option.
 
-## 2. First Use
+Both run paths below share this one `.env` and expect a Postgres already
+running on your host — the Compose stack does not bundle one. Either way the app
+comes up on <http://localhost:5173> (frontend) and port 5000 (backend).
 
-1. Start the app (see [README.md → Setup](README.md#setup))
-2. Open http://localhost:5173
-3. Click "Login with Google"
-4. Authorize calendar access
-5. Go to Settings → Calendars → Add your calendars
-6. Go to Settings → Categories → Create sections & categories
-7. Click "Sync Now" on Dashboard
+## 3. Run it
 
-## Example Categories
+### Docker Compose
 
-### Section: Fall 2024 Classes
+Also set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` to the database
+`DATABASE_URL` points at; Compose refuses to start without all three.
 
-- **Algorithms** - Keywords: `2341, algo, algorithms`
-- **Database** - Keywords: `2326, database, db`
+```bash
+docker compose up --build
+```
 
-### Section: Personal
+Source is bind-mounted, so edits hot-reload without a rebuild.
 
-- **Gym** - Keywords: `gym, workout, fitness`
-- **Reading** - Keywords: `read, reading, book`
+**First time only:** containers reach your host database via
+`host.docker.internal`, which a default Postgres rejects with a `no pg_hba.conf
+entry` error. The stack pins its network to `172.31.250.0/24`, so grant exactly
+that — add to `pg_hba.conf` (Debian/Ubuntu: `/etc/postgresql/16/main/pg_hba.conf`):
+
+```
+host    time_track    <your-db-user>    172.31.250.0/24    scram-sha-256
+```
+
+Then `sudo systemctl reload postgresql`. Use `md5` if that matches your server's
+`password_encryption`, and confirm `listen_addresses` is not loopback-only.
+
+### Native (venv + npm)
+
+Needs none of the Docker network setup. Install once:
+
+```bash
+cd backend && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+cd ../frontend && npm install
+```
+
+Then from the repo root:
+
+```bash
+./start-dev.sh
+```
+
+Runs both services in one terminal with `[backend]`/`[frontend]` prefixed logs.
+
+### Gotchas
+
+- After changing `frontend/package.json`, rebuild with
+  `docker compose up --build --renew-anon-volumes` — `node_modules` lives in an
+  anonymous volume that otherwise survives the rebuild
+- `POSTGRES_PORT` overrides the host DB port if it is not 5432
+- `FRONTEND_HOST_PORT` moves the frontend; set `CORS_ORIGINS` to match, since
+  the OAuth callback redirects to its first entry
+- `BACKEND_HOST_PORT` cannot actually move the backend off 5000 —
+  `frontend/src/services/api.js` hardcodes `http://localhost:5000/api`
+
+## 4. First use
+
+1. Open <http://localhost:5173> and click **Login with Google**
+2. Authorize calendar access
+3. **Settings → Calendars** → add your calendars
+4. **Settings → Categories** → create sections and categories
+5. Click **Sync Now** on the dashboard
+
+### Example categories
+
+**Fall 2024 Classes**
+
+- Algorithms — keywords: `2341, algo, algorithms`
+- Database — keywords: `2326, database, db`
+
+**Personal**
+
+- Gym — keywords: `gym, workout, fitness`
+- Reading — keywords: `read, reading, book`
 
 ## Troubleshooting
 
-**No events showing?**
+**No events showing?** Confirm the calendar is Active in Settings and the event
+duration is inside your filters (default 0–16 hours).
 
-- Make sure calendar is "Active" in Settings
-- Check event duration filters (default: 0-16 hours)
+**Categories not matching?** Keywords are case-insensitive substrings — `2341`
+matches "Study 2341". Add more variations.
 
-**Categories not matching?**
-
-- Keywords are substrings (e.g., "2341" matches "Study 2341")
-- Add more keyword variations
-
-**Sync not working?**
-
-- Check Flask logs for errors
-- Verify OAuth tokens are valid
+**Sync not working?** Check the Flask logs and verify your OAuth token is valid.
