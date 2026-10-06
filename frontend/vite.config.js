@@ -17,9 +17,10 @@ export default defineConfig(() => {
     },
     server: {
       port: 5173,
+      allowedHosts: ['localhost', '.localhost'],
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
           changeOrigin: true,
         }
       }
