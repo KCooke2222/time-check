@@ -120,7 +120,7 @@ function App() {
     return <Login onLoginSuccess={checkAuthStatus} needsReauth={needsReauth} />;
 
   return (
-    <Router>
+    <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
       <div className="min-h-screen bg-gray-100 relative">
         <div className="flex justify-center px-4 pt-4 pb-2">
           <nav className="relative bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-3 flex items-center justify-between w-full max-w-[1400px]">

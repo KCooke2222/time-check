@@ -4,8 +4,17 @@ import path from 'path'
 
 export default defineConfig(() => {
   const isDemo = process.env.VITE_DEMO_MODE === 'true';
+  // Base path for serving under a prefix (e.g. /time behind the view hub).
+  const base = ('/' + (process.env.VITE_BASE_PATH || '/').replace(/^\/+|\/+$/g, '')).replace(/\/$/, '') + '/';
+  const target = process.env.VITE_PROXY_TARGET || 'http://localhost:5000';
+  const proxy = { '/api': { target, changeOrigin: true } };
+  if (base !== '/') {
+    const prefix = base.slice(0, -1);
+    proxy[`${prefix}/api`] = { target, changeOrigin: true, rewrite: (p) => p.slice(prefix.length) };
+  }
 
   return {
+    base,
     plugins: [react()],
     resolve: {
       alias: isDemo ? [
@@ -18,12 +27,7 @@ export default defineConfig(() => {
     server: {
       port: 5173,
       allowedHosts: ['localhost', '.localhost'],
-      proxy: {
-        '/api': {
-          target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
-          changeOrigin: true,
-        }
-      }
+      proxy,
     }
   };
 });

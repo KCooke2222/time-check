@@ -35,6 +35,13 @@ docker compose up --build
 
 Source is bind-mounted, so edits hot-reload without a rebuild.
 
+To serve the app under a path prefix behind a reverse proxy (for example
+`http://localhost:8800/time/`), set `VITE_BASE_PATH=/time`,
+`FRONTEND_URL=http://localhost:8800/time` and
+`GOOGLE_REDIRECT_URI=http://localhost:8800/time/api/auth/callback` in `.env`,
+register that redirect URI on the Google OAuth client, add the proxy origin to
+`CORS_ORIGINS`, and restart the frontend (Vite reads the base at startup).
+
 **First time only:** containers reach your host database via
 `host.docker.internal`, which a default Postgres rejects with a `no pg_hba.conf
 entry` error. The stack pins its network to `172.31.250.0/24`, so grant exactly
