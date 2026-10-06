@@ -14,6 +14,9 @@ def _get_database_url():
     # Render/Railway emit postgres:// but SQLAlchemy requires postgresql://
     if url.startswith('postgres://'):
         url = url.replace('postgres://', 'postgresql://', 1)
+    # SQLAlchemy 2.1 resolves bare postgresql:// to psycopg 3; we ship psycopg2
+    if url.startswith('postgresql://'):
+        url = url.replace('postgresql://', 'postgresql+psycopg2://', 1)
     return url
 
 _DATABASE_URL = _get_database_url()
