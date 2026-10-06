@@ -9,10 +9,10 @@
 # .env at `docker compose` time, they are not values stored here. Only the
 # backend loads the whole .env; the frontend gets just the one variable it uses.
 #
-# Host ports: frontend 5173, backend 5000. FRONTEND_HOST_PORT does move the
-# frontend, as long as CORS_ORIGINS names the new origin — the OAuth callback
-# redirect follows it. The backend is fixed, because frontend/src/services/api.js
-# hardcodes the API base URL. See README.md.
+# Host ports: frontend 5173, backend 5000, both bound to 127.0.0.1 only.
+# FRONTEND_HOST_PORT moves the frontend, as long as CORS_ORIGINS names the new
+# origin: the OAuth callback redirect follows it. The browser only talks to the
+# frontend; Vite proxies /api to the backend container.
 #
 # First-time setup requires one change on the host, outside this repo: the host
 # Postgres must accept connections from this stack's subnet. See README.md.
@@ -39,7 +39,7 @@ services:
       # Required on Linux: host.docker.internal does not resolve without it.
       - "host.docker.internal:host-gateway"
     ports:
-      - "${BACKEND_HOST_PORT:-5000}:5000"
+      - "127.0.0.1:${BACKEND_HOST_PORT:-5000}:5000"
     volumes:
       # Bind mount for hot reload; anonymous volume keeps a host .venv from
       # shadowing the image's site-packages.
@@ -58,12 +58,12 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      # Deliberately narrowed instead of loading the whole .env: VITE_DEMO_MODE
-      # is the only variable the frontend consumes, so the backend's secrets
-      # have no reason to exist in this container's environment.
+      # Deliberately narrowed instead of loading the whole .env: the backend's
+      # secrets have no reason to exist in this container's environment.
       VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
+      VITE_PROXY_TARGET: http://backend:5000
     ports:
-      - "${FRONTEND_HOST_PORT:-5173}:5173"
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:5173"
     volumes:
       # Bind mount for hot reload; anonymous volume keeps the host node_modules
       # from shadowing the one installed in the image.

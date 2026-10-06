@@ -72,8 +72,11 @@ Runs both services in one terminal with `[backend]`/`[frontend]` prefixed logs.
 - `POSTGRES_PORT` overrides the host DB port if it is not 5432
 - `FRONTEND_HOST_PORT` moves the frontend; set `CORS_ORIGINS` to match, since
   the OAuth callback redirects to its first entry
-- `BACKEND_HOST_PORT` cannot actually move the backend off 5000 —
-  `frontend/src/services/api.js` hardcodes `http://localhost:5000/api`
+- `BACKEND_HOST_PORT` moves the backend; the browser only talks to the
+  frontend origin, Vite proxies `/api` to the backend (`VITE_PROXY_TARGET`)
+- Serving the app from another origin (a reverse proxy): set `CORS_ORIGINS` or
+  `FRONTEND_URL` and `GOOGLE_REDIRECT_URI` to that origin and register the
+  redirect URI in the Google Cloud console
 
 ## 4. First use
 
