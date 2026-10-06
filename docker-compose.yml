@@ -62,6 +62,7 @@ services:
       # secrets have no reason to exist in this container's environment.
       VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
       VITE_PROXY_TARGET: http://backend:5000
+      VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
     ports:
       - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:5173"
     volumes:
