@@ -1,20 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { authAPI } from "../services/api";
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
+// The OAuth state lives in a cookie bound to the hostname this page was opened
+// on, but Google only ever redirects to the one registered callback origin. A
+// sign-in started anywhere else (127.0.0.1, time.localhost, ...) comes back
+// without its cookie and fails. So before redirecting to Google, hop to that
+// origin and let it start the flow itself (`?signin=1`).
+//
+// Module-level so React StrictMode's double-run of effects cannot start two
+// flows: each would set its own state cookie and only one can win.
+let autoSigninStarted = false;
+
+// Read the query hints once and strip them from the URL. Cached at module
+// level for the same reason: StrictMode runs state initializers twice, and
+// the second run would see the already-cleaned URL and drop the hints.
+let cachedHints = null;
+
+function readHints() {
+  if (cachedHints) return cachedHints;
+  const params = new URLSearchParams(window.location.search);
+  cachedHints = {
+    autoSignin: params.get("signin") === "1",
+    movedOrigin: params.get("auth_error") === "origin",
+  };
+  if (cachedHints.autoSignin || cachedHints.movedOrigin) {
+    window.history.replaceState(null, "", window.location.pathname);
+  }
+  return cachedHints;
+}
+
 function Login({ onLoginSuccess, needsReauth = false }) {
   const [isLoading, setIsLoading] = useState(false);
+  const hints = readHints();
 
   const handleLogin = async () => {
     setIsLoading(true);
     try {
       const response = await authAPI.login();
+      const canonical = response.canonical_origin;
+      if (canonical && canonical !== window.location.origin) {
+        const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+        window.location.href = `${canonical}${base}/?signin=1`;
+        return;
+      }
       window.location.href = response.authorization_url;
     } catch {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (DEMO_MODE || !hints.autoSignin || autoSigninStarted) return;
+    autoSigninStarted = true;
+    handleLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDemoLogin = () => {
     localStorage.setItem("demo_authed", "true");
@@ -31,6 +73,13 @@ function Login({ onLoginSuccess, needsReauth = false }) {
         <p className="text-amber-400 text-sm -mt-4 text-center max-w-xs">
           Your Google access expired. Sign in again to keep syncing your
           calendar.
+        </p>
+      )}
+
+      {hints.movedOrigin && !DEMO_MODE && (
+        <p className="text-amber-400 text-sm -mt-4 text-center max-w-xs">
+          Sign-in has to run from {window.location.host}, so you were brought
+          here. Starting it again.
         </p>
       )}
 

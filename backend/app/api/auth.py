@@ -9,6 +9,7 @@ from authlib.integrations.requests_client import OAuth2Session
 from app import db, login_manager
 from app.models import User, UserSettings
 from app.services.google_auth import google_connection_status
+from urllib.parse import urlsplit, urlencode
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,27 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+def canonical_origin():
+    """The browser origin the OAuth callback lands on.
+
+    The OAuth state lives in the session cookie, and that cookie is bound to
+    the hostname the page was opened on. Google always redirects to the
+    registered GOOGLE_REDIRECT_URI, so a sign-in started from any other
+    hostname (127.0.0.1, time.localhost, ...) comes back without its state and
+    fails as a CSRF mismatch. The frontend compares its own origin against
+    this one before starting the flow.
+    """
+    u = urlsplit(current_app.config['GOOGLE_REDIRECT_URI'])
+    return f'{u.scheme}://{u.netloc}'
+
+
+def login_page(**params):
+    """Redirect to the frontend login screen, optionally with a query hint."""
+    frontend_url = current_app.config['FRONTEND_URL'].rstrip('/')
+    query = f'?{urlencode(params)}' if params else ''
+    return redirect(f'{frontend_url}/{query}')
+
+
 @auth_bp.route('/login', methods=['GET'])
 def login():
     """Initiate Google OAuth2 login flow"""
@@ -50,7 +72,8 @@ def login():
     session['oauth_state'] = state
 
     return jsonify({
-        'authorization_url': authorization_url
+        'authorization_url': authorization_url,
+        'canonical_origin': canonical_origin()
     })
 
 
@@ -63,11 +86,23 @@ def callback():
     if 'code' not in request.args:
         return jsonify({'error': 'No authorization code received'}), 400
 
+    # Consume the state: a value left behind by an earlier sign-in must never
+    # be compared against a later one. No state at all means the flow was
+    # started on another hostname (its cookie is not sent here), so send the
+    # user to the login screen on this origin instead of a bare 500.
+    expected_state = session.pop('oauth_state', None)
+    if not expected_state or expected_state != request.args.get('state'):
+        logger.warning(
+            'OAuth callback without a matching state in the session '
+            '(have=%s); restarting sign-in on %s',
+            bool(expected_state), canonical_origin())
+        return login_page(auth_error='origin', signin='1')
+
     google = OAuth2Session(
         current_app.config['GOOGLE_CLIENT_ID'],
         current_app.config['GOOGLE_CLIENT_SECRET'],
         redirect_uri=current_app.config['GOOGLE_REDIRECT_URI'],
-        state=session.get('oauth_state')
+        state=expected_state
     )
 
     try:
