@@ -51,8 +51,11 @@ def create_app(config_name='default'):
         except Exception:
             db.session.rollback()  # column already exists
 
-    # Initialize scheduler
-    if not scheduler.running:
+    # Initialize scheduler. With the debug reloader, create_app runs in both the
+    # watcher and the serving child; only the child (WERKZEUG_RUN_MAIN) may start
+    # it, or every sync runs twice.
+    reloader_parent = app.debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true'
+    if not scheduler.running and not reloader_parent:
         from app.tasks.sync_job import setup_sync_job
         setup_sync_job(app, scheduler)
         scheduler.start()

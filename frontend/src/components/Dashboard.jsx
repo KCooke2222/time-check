@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MdSync } from 'react-icons/md';
 import { reportsAPI, calendarAPI } from '../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { sortCategoriesBySection } from '../utils/categoryHelpers';
 import { parseDateLocal } from '../utils/dateHelpers';
 import WeeklyTrendChart from './WeeklyTrendChart';
 import WeekTimeGrid from './WeekTimeGrid';
+import { SYNCED_EVENT } from '../utils/syncEvents';
 
 const COLORS = ['#2563EB', '#0891B2', '#0D9488', '#059669', '#4F46E5', '#7C3AED', '#0284C7', '#10B981'];
 
@@ -30,14 +30,17 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState(null);
-  const [lastSync, setLastSync] = useState(null);
 
   useEffect(() => {
     loadCurrentWeek();
+    // The header's sync button reports here so the week reloads.
+    const reload = () => loadCurrentWeek(false);
+    window.addEventListener(SYNCED_EVENT, reload);
+    return () => window.removeEventListener(SYNCED_EVENT, reload);
   }, []);
 
-  const loadCurrentWeek = async () => {
-    setIsLoading(true);
+  const loadCurrentWeek = async (spinner = true) => {
+    if (spinner) setIsLoading(true);
     setError(null);
 
     try {
@@ -56,9 +59,8 @@ function Dashboard() {
     setError(null);
 
     try {
-      const result = await calendarAPI.sync();
-      setLastSync(new Date(result.stats.sync_time));
-      await loadCurrentWeek();
+      await calendarAPI.sync();
+      window.dispatchEvent(new Event(SYNCED_EVENT));
     } catch (err) {
       console.error('Sync failed:', err);
       setError('Sync failed. Please check your calendar connections.');
@@ -128,46 +130,26 @@ function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Header */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Current Week</h2>
-            <p className="text-gray-600">
-              {parseDateLocal(report.week_start).toLocaleDateString()} -{' '}
-              {parseDateLocal(report.week_end).toLocaleDateString()}
-            </p>
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            title="Sync calendars"
-            className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
-          >
-            <MdSync size={22} className={isSyncing ? 'animate-spin-reverse' : ''} />
-          </button>
-        </div>
-        {lastSync && (
-          <p className="text-sm text-gray-500 mt-2">
-            Last synced: {lastSync.toLocaleString()}
+      <div className="bg-white shadow rounded-lg p-4 sm:p-6 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800">Current Week</h2>
+          <p className="text-sm sm:text-base text-gray-500">
+            {parseDateLocal(report.week_start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
+            {parseDateLocal(report.week_end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
           </p>
-        )}
-      </div>
-
-      {/* Summary Card */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Hours</h3>
-        <p className="text-3xl font-bold text-gray-900 mt-2">
+        </div>
+        <p className="text-3xl sm:text-4xl font-bold text-gray-900 tabular-nums" title="Total hours">
           {(report.totals.raw_hours_total || 0).toFixed(1)}h
         </p>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
         {/* Section Distribution */}
         {sectionChartData.length > 0 && (
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Section</p>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -193,7 +175,7 @@ function Dashboard() {
         )}
 
         {/* Category Breakdown */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Category</p>
           <table className="min-w-full">
             <tbody className="divide-y divide-gray-50">

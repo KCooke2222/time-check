@@ -149,7 +149,7 @@ function Settings() {
   const tabLabels = { general: 'General', categories: 'Categories', calendars: 'Calendars' };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <div className="bg-white shadow rounded-lg">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">

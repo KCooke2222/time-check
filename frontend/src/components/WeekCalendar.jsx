@@ -128,7 +128,7 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrevMonth}
-          className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+          className="w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
         >
           &larr;
         </button>
@@ -137,16 +137,16 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
         </div>
         <button
           onClick={handleNextMonth}
-          className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+          className="w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
         >
           &rarr;
         </button>
       </div>
 
       {/* 3-Month Calendar Grid */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {monthsData.map((monthData, monthIdx) => (
-          <div key={monthIdx} className="rounded-lg p-3 border border-gray-100">
+          <div key={monthIdx} className={`rounded-lg p-3 border border-gray-100 ${monthIdx === 1 ? '' : 'hidden sm:block'}`}>
             {/* Month Header */}
             <h3 className="text-center text-sm font-semibold text-gray-800 mb-3">
               {monthData.date.toLocaleDateString('en-US', {
@@ -188,7 +188,7 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
                       return (
                         <div
                           key={dayIndex}
-                          className={`text-center py-1.5 px-0.5 text-xs ${
+                          className={`text-center py-2.5 sm:py-1.5 px-0.5 text-sm sm:text-xs ${
                             isSelected
                               ? day.isCurrentMonth
                                 ? 'text-white font-semibold'

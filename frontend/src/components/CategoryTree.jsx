@@ -548,8 +548,8 @@ function CategoryTree() {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      <div className="col-span-2">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      <div className="lg:col-span-2">
         {errorMessage && (
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-red-800">{errorMessage}</div>
         )}

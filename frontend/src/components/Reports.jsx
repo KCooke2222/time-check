@@ -85,10 +85,10 @@ function Reports() {
   }, [selectedWeeks]);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Weekly Reports</h2>
+    <div className="space-y-3 sm:space-y-6">
+      <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-3 sm:mb-6">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800">Weekly Reports</h2>
           <button
             onClick={() => selectedWeeks.forEach(weekStart => handleWeekSelect(weekStart))}
             className={`text-xs text-gray-400 hover:text-gray-600 transition-colors ${selectedWeeks.length === 0 ? 'invisible' : ''}`}
@@ -115,22 +115,22 @@ function Reports() {
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={handlePrevWeek}
-            className="px-4 py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
+            className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
           >
-            ← Previous Week
+            ← <span className="hidden sm:inline">Previous Week</span>
           </button>
           <button
             onClick={handleNextWeek}
-            className="px-4 py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
+            className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium shadow-sm"
           >
-            Next Week →
+            <span className="hidden sm:inline">Next Week</span> →
           </button>
         </div>
       )}
 
       {/* Report Results */}
       {report && (
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
           {/* Totals */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 rounded-lg border border-gray-100">
@@ -173,13 +173,13 @@ function Reports() {
                 <table className="min-w-full">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Section</th>
-                      <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Hours</th>
+                      <th className="px-2 sm:px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
+                      <th className="hidden sm:table-cell px-2 sm:px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase">Section</th>
+                      <th className="px-2 sm:px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Hours</th>
                       {selectedWeeks.length > 1 && (
                         <>
-                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Weeks</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Avg/Week</th>
+                          <th className="hidden sm:table-cell px-2 sm:px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Weeks</th>
+                          <th className="px-2 sm:px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase">Avg/Week</th>
                         </>
                       )}
                     </tr>
@@ -188,13 +188,13 @@ function Reports() {
                     {sortCategoriesBySection(Object.entries(report.category_summary))
                       .map(([id, data]) => (
                         <tr key={id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{data.name}</td>
-                          <td className="px-4 py-3 text-sm text-gray-400">{data.section_name || '—'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500 text-right">{data.raw_hours_total.toFixed(2)}h</td>
+                          <td className="px-2 sm:px-4 py-3 text-sm font-medium text-gray-900">{data.name}</td>
+                          <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-sm text-gray-400">{data.section_name || '—'}</td>
+                          <td className="px-2 sm:px-4 py-3 text-sm text-gray-500 text-right">{data.raw_hours_total.toFixed(2)}h</td>
                           {selectedWeeks.length > 1 && (
                             <>
-                              <td className="px-4 py-3 text-sm text-gray-400 text-right">{data.weeks_present}</td>
-                              <td className="px-4 py-3 text-sm text-gray-400 text-right">{data.raw_hours_avg?.toFixed(2)}h</td>
+                              <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-sm text-gray-400 text-right">{data.weeks_present}</td>
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-400 text-right">{data.raw_hours_avg?.toFixed(2)}h</td>
                             </>
                           )}
                         </tr>
