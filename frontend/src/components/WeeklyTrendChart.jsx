@@ -111,9 +111,8 @@ function WeeklyTrendChart() {
       }
       const ranges = getWeekRanges(preset, oldestDate);
       try {
-        const results = await Promise.all(
-          ranges.map(r => reportsAPI.range(r.start, r.end).catch(() => null))
-        );
+        const results = await reportsAPI.ranges(ranges.map(r => ({ start: r.start, end: r.end })))
+          .catch(() => ranges.map(() => null));
 
         const allKeys = new Set();
         const data = results.map((report, i) => {

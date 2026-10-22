@@ -120,6 +120,11 @@ export const reportsAPI = {
     return response.data;
   },
 
+  ranges: async (ranges) => {
+    const response = await apiClient.post('/reports/ranges', { ranges });
+    return response.data;
+  },
+
   currentWeek: async () => {
     const response = await apiClient.get('/reports/current-week');
     return response.data;

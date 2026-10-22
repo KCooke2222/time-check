@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import pytz
 from app.models import Section
-from app.services.event_queries import get_events_between
+from app.services.event_queries import get_events_between, range_bounds
 from app.utils.helpers import format_timestamp_iso
 
 
@@ -62,10 +62,11 @@ def build_hierarchical_section_summary(section_totals, user):
     return [embed_children(data) for data in result.values() if data['parent_id'] is None]
 
 
-def generate_range_report(user, start_iso, end_iso, include_events=False):
+def generate_range_report(user, start_iso, end_iso, include_events=False, events=None):
     user_timezone = user.settings.timezone if user.settings else 'UTC'
 
-    events = get_events_between(user, start_iso, end_iso)
+    if events is None:
+        events = get_events_between(user, start_iso, end_iso)
 
     try:
         start_dt = datetime.strptime(start_iso, '%Y-%m-%d')
@@ -200,3 +201,16 @@ def generate_range_report(user, start_iso, end_iso, include_events=False):
         result['events'] = event_list
 
     return result
+
+
+def generate_range_reports(user, ranges):
+    """Reports for many date ranges from one event query (the weekly trend chart)."""
+    if not ranges:
+        return []
+    events = get_events_between(user, min(r[0] for r in ranges), max(r[1] for r in ranges))
+    reports = []
+    for start_iso, end_iso in ranges:
+        lo, hi = range_bounds(user, start_iso, end_iso)
+        subset = [e for e in events if lo <= e.start_time < hi]
+        reports.append(generate_range_report(user, start_iso, end_iso, events=subset))
+    return reports
