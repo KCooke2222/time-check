@@ -111,9 +111,8 @@ function WeeklyTrendChart() {
       }
       const ranges = getWeekRanges(preset, oldestDate);
       try {
-        const results = await Promise.all(
-          ranges.map(r => reportsAPI.range(r.start, r.end).catch(() => null))
-        );
+        const results = await reportsAPI.ranges(ranges.map(r => ({ start: r.start, end: r.end })))
+          .catch(() => ranges.map(() => null));
 
         const allKeys = new Set();
         const data = results.map((report, i) => {
@@ -143,14 +142,14 @@ function WeeklyTrendChart() {
   const keysList = [...keys];
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+        <div className="flex w-full sm:w-auto overflow-x-auto rounded-lg border border-gray-200 text-xs">
           {PRESETS.map((p, i) => (
             <button
               key={p.key}
               onClick={() => setPreset(p.key)}
-              className={`px-2.5 py-1 ${i > 0 ? 'border-l border-gray-200' : ''} ${preset === p.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+              className={`flex-1 sm:flex-none whitespace-nowrap px-1 sm:px-2.5 py-2 sm:py-1 ${i > 0 ? 'border-l border-gray-200' : ''} ${preset === p.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
             >
               {p.label}
             </button>

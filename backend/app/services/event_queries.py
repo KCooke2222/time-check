@@ -8,6 +8,18 @@ import pytz
 from app.models import Event
 
 
+def range_bounds(user, start_iso, end_iso):
+    """Unix bounds [start, end) for ISO dates (end inclusive) in the user's timezone."""
+    user_timezone = user.settings.timezone if user.settings else 'UTC'
+    try:
+        tz = pytz.timezone(user_timezone)
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = pytz.timezone('UTC')
+    start = tz.localize(datetime.strptime(start_iso, '%Y-%m-%d'))
+    end = tz.localize(datetime.strptime(end_iso, '%Y-%m-%d')) + timedelta(days=1)
+    return int(start.timestamp()), int(end.timestamp())
+
+
 def get_events_between(user, start_iso, end_iso):
     """
     Fetch events between ISO date strings (inclusive).

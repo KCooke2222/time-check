@@ -3,11 +3,26 @@ APScheduler sync job.
 Runs calendar sync on startup and hourly.
 """
 
-from app.models import User
+from app.models import User, SyncLog
 from app.services.calendar_sync import sync_user_calendars
+from datetime import datetime, timezone
 import logging
+import math
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_LOOKBACK_DAYS = 7
+MAX_LOOKBACK_DAYS = 90
+
+
+def lookback_days_for(user):
+    """Days to re-read: at least a week, and back to the last successful sync
+    so an outage (expired Google grant) longer than a week loses nothing."""
+    last = SyncLog.query.filter_by(user_id=user.id).order_by(SyncLog.sync_time.desc()).first()
+    if not last:
+        return DEFAULT_LOOKBACK_DAYS
+    gap_days = (datetime.now(timezone.utc).timestamp() - last.sync_time) / 86400
+    return min(MAX_LOOKBACK_DAYS, max(DEFAULT_LOOKBACK_DAYS, math.ceil(gap_days) + 1))
 
 
 def sync_all_users():
@@ -26,7 +41,7 @@ def sync_all_users():
                 continue
 
             logger.info(f"Syncing calendars for user {user.id}")
-            sync_log = sync_user_calendars(user)
+            sync_log = sync_user_calendars(user, lookback_days=lookback_days_for(user))
 
             if sync_log:
                 logger.info(

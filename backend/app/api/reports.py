@@ -5,7 +5,7 @@ Handles report generation and retrieval.
 
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from app.services.report_generator import generate_range_report
+from app.services.report_generator import generate_range_report, generate_range_reports
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -90,6 +90,29 @@ def range_report():
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
     except Exception as e:
         logger.error(f"Range report error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@reports_bp.route('/ranges', methods=['POST'])
+@login_required
+def ranges_report():
+    """
+    Reports for many date ranges in one call.
+    Body: {"ranges": [{"start": "YYYY-MM-DD", "end": "YYYY-MM-DD"}, ...]}
+    """
+    body = request.get_json(silent=True) or {}
+    try:
+        ranges = [(r['start'], r['end']) for r in body.get('ranges', [])]
+        for start, end in ranges:
+            datetime.strptime(start, '%Y-%m-%d')
+            datetime.strptime(end, '%Y-%m-%d')
+    except (KeyError, TypeError, ValueError):
+        return jsonify({'error': 'ranges must be a list of {start, end} in YYYY-MM-DD'}), 400
+
+    try:
+        return jsonify(generate_range_reports(current_user, ranges))
+    except Exception as e:
+        logger.error(f"Ranges report error: {e}")
         return jsonify({'error': str(e)}), 500
 
 

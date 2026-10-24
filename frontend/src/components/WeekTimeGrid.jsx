@@ -71,26 +71,26 @@ function WeekTimeGrid({ events: initialEvents, weekStart: initialWeekStart }) {
   })();
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => setOffset(0)}
           disabled={offset === 0}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition disabled:opacity-40"
+          className="text-xs font-medium px-3 py-2 sm:py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition disabled:opacity-40"
         >
           Today
         </button>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setOffset(o => o - 1)}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition text-sm"
+            className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition text-lg sm:text-sm"
           >
             ‹
           </button>
           <button
             onClick={() => setOffset(o => Math.min(o + 1, 0))}
             disabled={offset === 0}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition text-sm disabled:opacity-30"
+            className="w-9 h-9 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 transition text-lg sm:text-sm disabled:opacity-30"
           >
             ›
           </button>
@@ -145,7 +145,7 @@ function WeekTimeGrid({ events: initialEvents, weekStart: initialWeekStart }) {
                   return (
                     <div
                       key={i}
-                      className="absolute left-0.5 right-0.5 rounded px-1.5 py-1 overflow-hidden"
+                      className="absolute left-0.5 right-0.5 rounded px-1 sm:px-1.5 py-1 overflow-hidden"
                       style={{ top, height, backgroundColor: bg }}
                     >
                       <p className={`text-xs font-medium leading-tight truncate ${categorized ? 'text-white' : 'text-gray-500'}`}>
