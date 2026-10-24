@@ -17,7 +17,6 @@ import Dashboard from "./components/Dashboard";
 import Reports from "./components/Reports";
 import Settings from "./components/Settings";
 import Login from "./components/Login";
-import HubLink from "./components/HubLink";
 
 function ago(date) {
   const min = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
@@ -243,7 +242,6 @@ function App() {
                 )}
               </div>
 
-              <HubLink className="text-muted bg-soft hover:bg-line" />
             </div>
           </nav>
         </header>

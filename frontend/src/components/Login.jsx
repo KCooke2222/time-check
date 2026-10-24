@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { authAPI } from "../services/api";
-import HubLink from "./HubLink";
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
@@ -66,9 +65,6 @@ function Login({ onLoginSuccess, needsReauth = false }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-oat gap-8">
-      <div className="fixed right-3 top-[calc(env(safe-area-inset-top)+12px)]">
-        <HubLink className="text-muted bg-soft hover:bg-line" />
-      </div>
       <span className="text-ink text-2xl font-semibold tracking-tight">
         Time Check
       </span>
