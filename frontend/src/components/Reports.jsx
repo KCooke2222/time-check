@@ -49,15 +49,15 @@ function SelectedWeeks({ weeks, colorOf, order, avg }) {
     <div className="h-[120px]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barCategoryGap="18%">
-          <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6b6258' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={14} />
-          <Tooltip content={<WeekTip />} cursor={{ fill: '#2a242008' }} />
+          <XAxis dataKey="week" tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={14} />
+          <Tooltip content={<WeekTip />} cursor={{ fill: 'rgb(var(--ink) / 0.04)' }} />
           {keys.map((k, i) => (
             <Bar key={k} dataKey={k} stackId="a" fill={colorOf(k)} isAnimationActive={false}
               radius={i === keys.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}>
               {rows.map((_, j) => <Cell key={j} fillOpacity={0.85} />)}
             </Bar>
           ))}
-          {avg > 0 && <ReferenceLine y={avg} stroke="#2a2420" strokeWidth={1.5} strokeDasharray="4 3" />}
+          {avg > 0 && <ReferenceLine y={avg} stroke="rgb(var(--ink))" strokeWidth={1.5} strokeDasharray="4 3" />}
         </BarChart>
       </ResponsiveContainer>
     </div>

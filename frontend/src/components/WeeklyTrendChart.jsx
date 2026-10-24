@@ -151,16 +151,16 @@ function WeeklyTrendChart({ colorOf, order = [] }) {
         <div className="h-[220px] sm:h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyData} margin={{ top: 6, right: 4, left: -24, bottom: 0 }} barCategoryGap="18%">
-              <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6b6258' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
-              <YAxis tick={{ fontSize: 10, fill: '#6b6258' }} axisLine={false} tickLine={false} width={44} />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: '#2a242008' }} />
+              <XAxis dataKey="week" tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
+              <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} width={44} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--ink) / 0.04)' }} />
               {keysList.map((key, i) => (
                 <Bar key={key} dataKey={key} stackId="a" fill={colorOf(key)} isAnimationActive={false}
                   radius={i === keysList.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}>
                   {weeklyData.map((_, j) => <Cell key={j} fillOpacity={j === last ? 1 : 0.42} />)}
                 </Bar>
               ))}
-              {avg > 0 && <ReferenceLine y={avg} stroke="#2a2420" strokeWidth={1.5} strokeDasharray="4 3" />}
+              {avg > 0 && <ReferenceLine y={avg} stroke="rgb(var(--ink))" strokeWidth={1.5} strokeDasharray="4 3" />}
             </BarChart>
           </ResponsiveContainer>
         </div>

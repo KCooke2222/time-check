@@ -2,10 +2,11 @@ import { formatDateLocal } from './dateHelpers';
 
 // Charted sections get a colour each, in the order they first appear; "Other"
 // is the categories with no section, as main computes it.
-const PALETTE = ['#3c6a8c', '#2f6b4f', '#8b5e83', '#4f7a7a', '#a0574a', '#5a6b3c', '#6b5a9c'];
+// CSS variables (index.css) so dark mode can lift them.
+const PALETTE = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)', 'var(--c7)'];
 export const OTHER = 'Other';
-export const OTHER_COLOR = '#c39a45';
-export const NONE_COLOR = '#b9afa2';
+export const OTHER_COLOR = 'rgb(var(--gold))';
+export const NONE_COLOR = 'var(--c-none)';
 
 export function makeColors(names) {
   const map = {};

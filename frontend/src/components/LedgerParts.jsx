@@ -9,7 +9,7 @@ export function Spark({ values, color, width = 90, height = 22 }) {
         const h = Math.max((v / mx) * height, v > 0 ? 1 : 0);
         return (
           <rect key={i} x={i * bw + 1} y={height - h} width={Math.max(bw - 2, 1)} height={h} rx="1"
-            fill={i === values.length - 1 ? color : '#e4dccd'} />
+            fill={i === values.length - 1 ? color : 'rgb(var(--line))'} />
         );
       })}
     </svg>
@@ -33,7 +33,7 @@ export function Ledger({ keys, weeks, current, colorOf, showSub = true, nowLabel
   const prev = weeks.slice(0, -1);
   const avg = (get) => prev.length ? prev.reduce((a, w) => a + get(w), 0) / prev.length : 0;
   const rows = [
-    { name: 'total', get: (w) => w?.total || 0, color: '#2a2420' },
+    { name: 'total', get: (w) => w?.total || 0, color: 'rgb(var(--ink))' },
     ...keys.map(k => ({ name: k, get: (w) => w?.by[k] || 0, color: colorOf(k) })),
   ];
   const cols = 'grid grid-cols-[minmax(0,1fr)_64px_40px_40px] sm:grid-cols-[minmax(0,1fr)_90px_44px_44px] items-center gap-2';

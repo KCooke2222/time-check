@@ -10,15 +10,48 @@
   animation: spin-reverse 1s linear infinite;
 }
 
+:root {
+  --oat: 243 238 228;
+  --panel: 255 253 248;
+  --ink: 42 36 32;
+  --muted: 107 98 88;
+  --line: 228 220 205;
+  --soft: 235 228 214;
+  --good: 47 107 79;
+  --warn: 184 96 63;
+  --gold: 195 154 69;
+  --hl: 234 219 184;
+  /* chart series (utils/ledger.js) */
+  --c1: #3c6a8c; --c2: #2f6b4f; --c3: #8b5e83; --c4: #4f7a7a;
+  --c5: #a0574a; --c6: #5a6b3c; --c7: #6b5a9c; --c-none: #b9afa2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --oat: 18 18 18;
+    --panel: 28 28 30;
+    --ink: 232 232 232;
+    --muted: 154 154 154;
+    --line: 44 44 46;
+    --soft: 36 36 38;
+    --good: 95 174 134;
+    --warn: 222 128 96;
+    --gold: 214 176 92;
+    --hl: 58 58 60;
+    --c1: #5b93bd; --c2: #4f9d77; --c3: #b583ab; --c4: #6fa6a6;
+    --c5: #c97a6c; --c6: #879c5c; --c7: #9583c9; --c-none: #6e6e70;
+  }
+}
+
 html {
   overflow-y: scroll;
-  color-scheme: light;
+  color-scheme: light dark;
 }
 
 body {
   margin: 0;
-  background: #f3eee4;
-  color: #2a2420;
+  background: rgb(var(--oat));
+  color: rgb(var(--ink));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
   font-size: 15px;
   line-height: 1.35;
@@ -47,19 +80,19 @@ code {
   --rct-color-tree-bg: transparent;
   --rct-color-tree-focus-outline: transparent;
   --rct-focus-outline: transparent;
-  --rct-color-focustree-item-selected-bg: #ebe4d6;
-  --rct-color-focustree-item-selected-text: #2a2420;
-  --rct-color-focustree-item-hover-bg: #f3eee4;
-  --rct-color-focustree-item-hover-text: #2a2420;
-  --rct-color-focustree-item-active-bg: #ebe4d6;
-  --rct-color-focustree-item-active-text: #2a2420;
-  --rct-color-focustree-item-draggingover-bg: #eadbb8;
-  --rct-color-focustree-item-draggingover-color: #2a2420;
-  --rct-color-search-highlight-bg: #eadbb8;
-  --rct-color-arrow: #6b6258;
-  --rct-bar-color: #2a2420;
+  --rct-color-focustree-item-selected-bg: rgb(var(--soft));
+  --rct-color-focustree-item-selected-text: rgb(var(--ink));
+  --rct-color-focustree-item-hover-bg: rgb(var(--oat));
+  --rct-color-focustree-item-hover-text: rgb(var(--ink));
+  --rct-color-focustree-item-active-bg: rgb(var(--soft));
+  --rct-color-focustree-item-active-text: rgb(var(--ink));
+  --rct-color-focustree-item-draggingover-bg: rgb(var(--hl));
+  --rct-color-focustree-item-draggingover-color: rgb(var(--ink));
+  --rct-color-search-highlight-bg: rgb(var(--hl));
+  --rct-color-arrow: rgb(var(--muted));
+  --rct-bar-color: rgb(var(--ink));
   --rct-item-height: 30px;
   --rct-radius: 7px;
   font-size: 14px;
-  color: #2a2420;
+  color: rgb(var(--ink));
 }

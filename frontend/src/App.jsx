@@ -59,7 +59,7 @@ function SyncStamp() {
 
   const last = stats?.latest_sync_time ? new Date(stats.latest_sync_time) : null;
   const ageH = last ? (Date.now() - last.getTime()) / 3600000 : Infinity;
-  const dot = !stats ? "bg-line" : ageH < 2 ? "bg-good" : ageH < 24 ? "bg-[#c39a45]" : "bg-warn";
+  const dot = !stats ? "bg-line" : ageH < 2 ? "bg-good" : ageH < 24 ? "bg-gold" : "bg-warn";
   const s = stats?.last_sync_stats;
   const title = last
     ? `Last sync ${last.toLocaleString()}` + (s ? ` · +${s.events_added} ~${s.events_updated} −${s.events_deleted}` : "")
@@ -210,7 +210,7 @@ function App() {
       <div className="min-h-screen bg-oat relative pb-[calc(64px+env(safe-area-inset-bottom))] sm:pb-0">
         <header className="sm:sticky top-0 z-40 bg-oat/95 backdrop-blur pt-[env(safe-area-inset-top)]">
           <nav className="relative flex items-center gap-2 max-w-[1100px] mx-auto px-4 py-2.5">
-            <img src={logo} alt="Time Check" className="h-[18px]" />
+            <img src={logo} alt="Time Check" className="h-[18px] dark:invert" />
             {DEMO_MODE && (
               <span className="text-[10px] font-medium text-muted/60 tracking-widest uppercase">Demo</span>
             )}

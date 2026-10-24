@@ -91,7 +91,7 @@ function Login({ onLoginSuccess, needsReauth = false }) {
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={handleDemoLogin}
-            className="flex items-center gap-2 bg-ink text-white px-6 py-2.5 rounded-lg font-medium hover:bg-ink/90 transition"
+            className="flex items-center gap-2 bg-ink text-panel px-6 py-2.5 rounded-lg font-medium hover:bg-ink/90 transition"
           >
             View Demo
           </button>

@@ -664,8 +664,8 @@ function CategoryTree() {
                             title={showInCharts ? 'Remove from charts' : 'Show in charts'}
                           >
                             {showInCharts
-                              ? <IoStar size={13} className="text-[#c39a45]" />
-                              : <IoStarOutline size={13} className="text-line hover:text-[#c39a45]" />
+                              ? <IoStar size={13} className="text-gold" />
+                              : <IoStarOutline size={13} className="text-line hover:text-gold" />
                             }
                           </span>
                         )}
@@ -787,7 +787,7 @@ function CategoryTree() {
                 />
                 <button
                   onClick={handleAddTag}
-                  className="rounded-lg bg-ink px-3 py-2 text-white hover:bg-ink/90"
+                  className="rounded-lg bg-ink px-3 py-2 text-panel hover:bg-ink/90"
                   title="Add tag"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">

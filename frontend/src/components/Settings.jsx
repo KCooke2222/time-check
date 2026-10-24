@@ -176,7 +176,7 @@ function Settings() {
               <span className={`text-xs mr-auto ${message.type === 'success' ? 'text-good' : 'text-warn'}`}>{message.text}</span>
             )}
             <button type="submit" disabled={isSaving}
-              className="bg-ink text-white px-3.5 py-1.5 rounded-lg text-sm font-medium hover:bg-ink/90 disabled:opacity-50">
+              className="bg-ink text-panel px-3.5 py-1.5 rounded-lg text-sm font-medium hover:bg-ink/90 disabled:opacity-50">
               {isSaving ? '…' : 'Save'}
             </button>
           </div>

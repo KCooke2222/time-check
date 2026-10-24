@@ -177,8 +177,8 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
                           className={`text-center py-2 sm:py-1 px-0.5 text-sm sm:text-xs num ${
                             isSelected
                               ? day.isCurrentMonth
-                                ? 'text-white font-semibold'
-                                : 'text-white/45'
+                                ? 'text-panel font-semibold'
+                                : 'text-panel/45'
                               : day.isCurrentMonth
                               ? 'text-ink'
                               : 'text-muted/50'
