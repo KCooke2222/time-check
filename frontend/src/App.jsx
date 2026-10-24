@@ -208,7 +208,7 @@ function App() {
   return (
     <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
       <div className="min-h-screen bg-oat relative pb-[calc(64px+env(safe-area-inset-bottom))] sm:pb-0">
-        <header className="sticky top-0 z-40 bg-oat/95 backdrop-blur pt-[env(safe-area-inset-top)]">
+        <header className="sm:sticky top-0 z-40 bg-oat/95 backdrop-blur pt-[env(safe-area-inset-top)]">
           <nav className="relative flex items-center gap-2 max-w-[1100px] mx-auto px-4 py-2.5">
             <img src={logo} alt="Time Check" className="h-[18px]" />
             {DEMO_MODE && (
