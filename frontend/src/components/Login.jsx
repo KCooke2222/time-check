@@ -65,23 +65,23 @@ function Login({ onLoginSuccess, needsReauth = false }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 gap-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-oat gap-8">
       <div className="fixed right-3 top-[calc(env(safe-area-inset-top)+12px)]">
-        <HubLink className="text-gray-300 bg-white/10 hover:bg-white/20" />
+        <HubLink className="text-muted bg-soft hover:bg-line" />
       </div>
-      <span className="text-white text-2xl font-medium tracking-wide">
+      <span className="text-ink text-2xl font-semibold tracking-tight">
         Time Check
       </span>
 
       {needsReauth && !DEMO_MODE && (
-        <p className="text-amber-400 text-sm -mt-4 text-center max-w-xs">
+        <p className="text-warn text-sm -mt-4 text-center max-w-xs">
           Your Google access expired. Sign in again to keep syncing your
           calendar.
         </p>
       )}
 
       {hints.movedOrigin && !DEMO_MODE && (
-        <p className="text-amber-400 text-sm -mt-4 text-center max-w-xs">
+        <p className="text-warn text-sm -mt-4 text-center max-w-xs">
           Sign-in has to run from {window.location.host}, so you were brought
           here. Starting it again.
         </p>
@@ -91,17 +91,16 @@ function Login({ onLoginSuccess, needsReauth = false }) {
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={handleDemoLogin}
-            className="flex items-center gap-2 bg-white text-gray-800 px-6 py-2.5 rounded-md font-medium hover:bg-gray-100 transition"
+            className="flex items-center gap-2 bg-ink text-white px-6 py-2.5 rounded-lg font-medium hover:bg-ink/90 transition"
           >
             View Demo
           </button>
-          <p className="text-gray-500 text-xs">Explore with sample data</p>
         </div>
       ) : (
         <button
           onClick={handleLogin}
           disabled={isLoading}
-          className="flex items-center gap-3 bg-white text-gray-800 px-5 py-2.5 rounded-md font-medium hover:bg-gray-100 transition disabled:opacity-50"
+          className="flex items-center gap-3 bg-panel border border-line text-ink px-5 py-2.5 rounded-lg font-medium hover:bg-soft transition disabled:opacity-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

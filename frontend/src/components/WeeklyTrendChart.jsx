@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { reportsAPI, calendarAPI } from '../services/api';
 import { formatDateLocal } from '../utils/dateHelpers';
+import { summarize, OTHER, h1 } from '../utils/ledger';
 
-const COLORS = ['#2563EB', '#0891B2', '#0D9488', '#059669', '#4F46E5', '#7C3AED', '#0284C7', '#10B981'];
 const PRESET_KEY = 'weeklyTrendPreset';
 
+const YEAR = new Date().getFullYear();
 const PRESETS = [
-  { key: 'all', label: 'All Time' },
-  { key: 'this-year', label: 'This Year' },
-  { key: 'last-year', label: 'Last Year' },
-  { key: '52w', label: '52W' },
-  { key: '26w', label: '26W' },
-  { key: '12w', label: '12W' },
-  { key: '8w', label: '8W' },
+  { key: '8w', label: '8w' },
+  { key: '12w', label: '12w' },
+  { key: '26w', label: '26w' },
+  { key: '52w', label: '52w' },
+  { key: 'this-year', label: String(YEAR) },
+  { key: 'last-year', label: String(YEAR - 1) },
+  { key: 'all', label: 'All' },
 ];
 
 function getSunday(date) {
@@ -62,36 +63,24 @@ function getWeekRanges(preset, oldestDate = null) {
   return ranges;
 }
 
-function collectChartSections(sections) {
-  const result = [];
-  for (const s of sections) {
-    if (s.show_in_charts && s.total_raw_hours > 0) {
-      result.push({ name: s.name, value: s.total_raw_hours });
-    } else if (!s.show_in_charts && s.children?.length) {
-      result.push(...collectChartSections(s.children));
-    }
-  }
-  return result;
-}
-
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
+  const total = payload.reduce((a, e) => a + (e.value || 0), 0);
   return (
-    <div className="bg-white rounded-xl shadow-lg px-3 py-2 text-sm ring-1 ring-black/5">
-      {label && <p className="font-medium text-gray-700 mb-1">{label}</p>}
-      {payload.map((entry, i) => (
+    <div className="bg-panel rounded-lg shadow-lg px-3 py-2 text-xs border border-line">
+      <p className="font-semibold mb-1">{label} <span className="num font-normal text-muted">{h1(total)} h</span></p>
+      {[...payload].reverse().filter(e => e.value > 0).map((entry, i) => (
         <div key={i} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.fill }} />
-          <span className="text-gray-600">{entry.name}:</span>
-          <span className="font-medium text-gray-900">{entry.value}h</span>
+          <span className="dot" style={{ backgroundColor: entry.color }} />
+          <span className="text-muted">{entry.name}</span>
+          <span className="num ml-auto pl-3 font-semibold">{h1(entry.value)}</span>
         </div>
       ))}
     </div>
   );
 }
 
-
-function WeeklyTrendChart() {
+function WeeklyTrendChart({ colorOf, order = [] }) {
   const [preset, setPreset] = useState(() => localStorage.getItem(PRESET_KEY) || '8w');
   const [weeklyData, setWeeklyData] = useState([]);
   const [keys, setKeys] = useState([]);
@@ -117,16 +106,14 @@ function WeeklyTrendChart() {
         const allKeys = new Set();
         const data = results.map((report, i) => {
           const row = { week: ranges[i].label };
-          if (!report) return row;
-
-          collectChartSections(report.section_hierarchy || []).forEach(({ name, value }) => {
+          const sum = summarize(report);
+          if (!sum) return row;
+          Object.entries(sum.by).forEach(([name, value]) => {
+            if (value <= 0) return;
             row[name] = parseFloat(value.toFixed(2));
             allKeys.add(name);
           });
-          const other = Object.values(report.category_summary || {})
-            .filter(c => !c.section_id)
-            .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
-          if (other > 0) { row['Other'] = parseFloat(other.toFixed(2)); allKeys.add('Other'); }
+          row.total = sum.total;
           return row;
         });
 
@@ -139,39 +126,44 @@ function WeeklyTrendChart() {
     fetchData();
   }, [preset]);
 
-  const keysList = [...keys];
+  const rank = (k) => (k === OTHER ? 1e3 : order.indexOf(k) === -1 ? 500 : order.indexOf(k));
+  const keysList = [...keys].sort((x, y) => rank(x) - rank(y));
+  const past = weeklyData.slice(0, -1).filter(r => r.total != null);
+  const avg = past.length ? past.reduce((a, r) => a + r.total, 0) / past.length : 0;
+  const last = weeklyData.length - 1;
 
   return (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex w-full sm:w-auto overflow-x-auto rounded-lg border border-gray-200 text-xs">
-          {PRESETS.map((p, i) => (
-            <button
-              key={p.key}
-              onClick={() => setPreset(p.key)}
-              className={`flex-1 sm:flex-none whitespace-nowrap px-1 sm:px-2.5 py-2 sm:py-1 ${i > 0 ? 'border-l border-gray-200' : ''} ${preset === p.key ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-            >
+    <div className="panel p-3 sm:p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="seg min-w-0 shrink overflow-x-auto [scrollbar-width:none]">
+          {PRESETS.map((p) => (
+            <button key={p.key} onClick={() => setPreset(p.key)} className={preset === p.key ? 'on' : ''}>
               {p.label}
             </button>
           ))}
         </div>
+        {avg > 0 && <span className="ml-auto text-xs text-muted num whitespace-nowrap" title="Weekly average">avg {h1(avg)}</span>}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>
+        <div className="h-[220px] sm:h-[260px]" />
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={weeklyData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <XAxis dataKey="week" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-            <YAxis tick={{ fontSize: 12 }} unit="h" />
-            <Tooltip content={<ChartTooltip />} />
-            <Legend iconType="circle" iconSize={8} />
-            {keysList.map((key, i) => (
-              <Bar key={key} dataKey={key} stackId="a" fill={COLORS[i % COLORS.length]}
-                radius={i === keysList.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]} />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-[220px] sm:h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={weeklyData} margin={{ top: 6, right: 4, left: -24, bottom: 0 }} barCategoryGap="18%">
+              <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6b6258' }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b6258' }} axisLine={false} tickLine={false} width={44} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: '#2a242008' }} />
+              {keysList.map((key, i) => (
+                <Bar key={key} dataKey={key} stackId="a" fill={colorOf(key)} isAnimationActive={false}
+                  radius={i === keysList.length - 1 ? [2, 2, 0, 0] : [0, 0, 0, 0]}>
+                  {weeklyData.map((_, j) => <Cell key={j} fillOpacity={j === last ? 1 : 0.42} />)}
+                </Bar>
+              ))}
+              {avg > 0 && <ReferenceLine y={avg} stroke="#2a2420" strokeWidth={1.5} strokeDasharray="4 3" />}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );

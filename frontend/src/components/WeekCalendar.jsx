@@ -125,30 +125,16 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
   return (
     <div onMouseUp={handleGlobalMouseUp} onMouseLeave={handleGlobalMouseUp}>
       {/* Navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={handlePrevMonth}
-          className="w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-        >
-          &larr;
-        </button>
-        <div className="text-sm font-medium text-gray-500">
-          {selectedWeeks.length > 0 ? `${selectedWeeks.length} week${selectedWeeks.length > 1 ? 's' : ''} selected` : 'Select weeks'}
-        </div>
-        <button
-          onClick={handleNextMonth}
-          className="w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-        >
-          &rarr;
-        </button>
-      </div>
-
-      {/* 3-Month Calendar Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* 3-Month Calendar Grid, month arrows at the edges */}
+      <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-6">
+        <button onClick={handlePrevMonth} aria-label="Previous month"
+          className="absolute left-0 -top-1 w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-soft">‹</button>
+        <button onClick={handleNextMonth} aria-label="Next month"
+          className="absolute right-0 -top-1 w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:bg-soft">›</button>
         {monthsData.map((monthData, monthIdx) => (
-          <div key={monthIdx} className={`rounded-lg p-3 border border-gray-100 ${monthIdx === 1 ? '' : 'hidden sm:block'}`}>
+          <div key={monthIdx} className={monthIdx === 1 ? '' : 'hidden sm:block'}>
             {/* Month Header */}
-            <h3 className="text-center text-sm font-semibold text-gray-800 mb-3">
+            <h3 className="text-center text-sm font-semibold mb-2 leading-6">
               {monthData.date.toLocaleDateString('en-US', {
                 month: 'long',
                 year: 'numeric'
@@ -156,16 +142,16 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
             </h3>
 
             {/* Day Headers */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 mb-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                <div key={idx} className="text-center text-xs font-medium text-gray-500 py-1">
+                <div key={idx} className="text-center text-[10px] text-muted py-0.5">
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Weeks */}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {monthData.weeks.map((week, weekIndex) => {
                 const isSelected = isWeekSelected(week.weekStart);
                 // Check if all days in this week are in the past
@@ -174,12 +160,12 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
                 return (
                   <div
                     key={weekIndex}
-                    className={`grid grid-cols-7 gap-1 rounded transition-colors select-none ${
+                    className={`grid grid-cols-7 rounded-[7px] cursor-pointer transition-colors select-none ${
                       isSelected
-                        ? 'bg-blue-500 hover:bg-blue-600'
+                        ? 'bg-ink hover:bg-ink/90'
                         : allDaysPast
-                        ? 'bg-gray-200 hover:bg-gray-300'
-                        : 'hover:bg-gray-200'
+                        ? 'bg-soft/60 hover:bg-soft'
+                        : 'hover:bg-soft'
                     }`}
                     onMouseDown={() => handleMouseDown(week.weekStart)}
                     onMouseEnter={() => handleMouseEnter(week.weekStart)}
@@ -188,16 +174,14 @@ function WeekCalendar({ selectedWeeks, onWeekSelect }) {
                       return (
                         <div
                           key={dayIndex}
-                          className={`text-center py-2.5 sm:py-1.5 px-0.5 text-sm sm:text-xs ${
+                          className={`text-center py-2 sm:py-1 px-0.5 text-sm sm:text-xs num ${
                             isSelected
                               ? day.isCurrentMonth
                                 ? 'text-white font-semibold'
-                                : 'text-blue-100'
+                                : 'text-white/45'
                               : day.isCurrentMonth
-                              ? allDaysPast
-                                ? 'text-gray-700'
-                                : 'text-gray-800'
-                              : 'text-gray-400'
+                              ? 'text-ink'
+                              : 'text-muted/50'
                           }`}
                         >
                           {day.date.getDate()}

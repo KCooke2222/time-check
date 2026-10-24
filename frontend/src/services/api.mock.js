@@ -372,6 +372,7 @@ export const reportsAPI = {
     return buildReport(formatLocal(sunday), formatLocal(sat), true);
   },
   range:  async (start, end) => buildReport(start, end, false),
+  ranges: async (ranges) => ranges.map(r => buildReport(r.start, r.end, false)),
   weekly: async (date) => {
     const d      = date ? parseLocal(date) : new Date();
     const sunday = getSunday(d);

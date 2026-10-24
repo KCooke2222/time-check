@@ -1,54 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { reportsAPI, calendarAPI } from '../services/api';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { sortCategoriesBySection } from '../utils/categoryHelpers';
 import { parseDateLocal } from '../utils/dateHelpers';
+import { summarize, chartNames, lastWeeks, getSunday, h1, md, OTHER } from '../utils/ledger';
+import useColors from '../utils/useColors';
 import WeeklyTrendChart from './WeeklyTrendChart';
 import WeekTimeGrid from './WeekTimeGrid';
+import { Ledger, SplitBar, CategoryBars, Loading } from './LedgerParts';
 import { SYNCED_EVENT } from '../utils/syncEvents';
+import { MdSync } from 'react-icons/md';
 
-const COLORS = ['#2563EB', '#0891B2', '#0D9488', '#059669', '#4F46E5', '#7C3AED', '#0284C7', '#10B981'];
-
-function ChartTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white rounded-xl shadow-lg px-3 py-2 text-sm border-0 ring-1 ring-black/5">
-      {label && <p className="font-medium text-gray-700 mb-1">{label}</p>}
-      {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.fill || entry.color }} />
-          <span className="text-gray-600">{entry.name}:</span>
-          <span className="font-medium text-gray-900">{entry.value}h</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const LEDGER_WEEKS = 9; // this week plus the 8 before it
 
 function Dashboard() {
   const [report, setReport] = useState(null);
+  const [weeks, setWeeks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState(null);
+  const colorOf = useColors();
 
   useEffect(() => {
-    loadCurrentWeek();
+    load();
     // The header's sync button reports here so the week reloads.
-    const reload = () => loadCurrentWeek(false);
+    const reload = () => load(false);
     window.addEventListener(SYNCED_EVENT, reload);
     return () => window.removeEventListener(SYNCED_EVENT, reload);
   }, []);
 
-  const loadCurrentWeek = async (spinner = true) => {
+  const load = async (spinner = true) => {
     if (spinner) setIsLoading(true);
     setError(null);
-
     try {
-      const data = await reportsAPI.currentWeek();
+      const [data, history] = await Promise.all([
+        reportsAPI.currentWeek(),
+        reportsAPI.ranges(lastWeeks(LEDGER_WEEKS)).catch(() => []),
+      ]);
       setReport(data);
+      setWeeks(history.map(summarize));
     } catch (err) {
       console.error('Failed to load current week:', err);
-      setError('Failed to load data. Please try syncing your calendars.');
+      setError('Load failed');
     } finally {
       setIsLoading(false);
     }
@@ -56,144 +47,79 @@ function Dashboard() {
 
   const handleSync = async () => {
     setIsSyncing(true);
-    setError(null);
-
     try {
       await calendarAPI.sync();
       window.dispatchEvent(new Event(SYNCED_EVENT));
     } catch (err) {
       console.error('Sync failed:', err);
-      setError('Sync failed. Please check your calendar connections.');
+      setError('Sync failed');
     } finally {
       setIsSyncing(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-xl text-gray-600">Loading dashboard...</div>
-      </div>
-    );
-  }
+  const cur = useMemo(() => summarize(report), [report]);
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-        {error}
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />;
 
-  if (!report) {
+  if (error || !report) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 mb-4">No data available</p>
-        <button
-          onClick={handleSync}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Sync Calendars
+      <div className="flex items-center justify-center gap-3 py-12 text-muted">
+        {error && <span className="text-warn">{error}</span>}
+        <button onClick={handleSync} disabled={isSyncing} title="Sync" className="p-2 rounded-lg hover:bg-soft">
+          <MdSync size={20} className={isSyncing ? 'animate-spin-reverse' : ''} />
         </button>
       </div>
     );
   }
 
-  // Prepare chart data with sorting by section
-  const categoryChartData = sortCategoriesBySection(Object.entries(report.category_summary))
-    .map(([id, data]) => ({
-      name: data.name,
-      rawHours: parseFloat((data.raw_hours_total || data.raw_hours || 0).toFixed(2)),
-    }));
+  const order = chartNames(report.section_hierarchy);
+  const seen = new Set([...order, ...weeks.flatMap(w => (w ? Object.keys(w.by) : []))]);
+  const keys = [...order, ...[...seen].filter(k => !order.includes(k) && k !== OTHER), OTHER]
+    .filter(k => cur.by[k] > 0.05 || weeks.some(w => w?.by[k] > 0.05));
+  const ledgerWeeks = weeks.length ? [...weeks.slice(0, -1), cur] : [cur];
 
-  const unsectionedHours = Object.values(report.category_summary)
-    .filter(c => !c.section_id)
-    .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
-
-  function collectChartSections(sections) {
-    const result = [];
-    for (const s of sections) {
-      if (s.show_in_charts && s.total_raw_hours > 0) {
-        result.push({ name: s.name, value: parseFloat(s.total_raw_hours.toFixed(2)) });
-      } else if (!s.show_in_charts && s.children?.length) {
-        result.push(...collectChartSections(s.children));
-      }
-    }
-    return result;
-  }
-
-  const anyStarred = (report.section_hierarchy || []).some(s => s.show_in_charts || s.children?.some(c => c.show_in_charts));
-
-  const sectionChartData = [
-    ...collectChartSections(report.section_hierarchy || []),
-    ...(unsectionedHours > 0 ? [{ name: 'Other', value: parseFloat(unsectionedHours.toFixed(2)) }] : []),
-  ];
+  // Pace: the average of the previous weeks, scaled to how far into this week we are.
+  const prev = weeks.slice(0, -1).filter(Boolean);
+  const avgPrev = prev.length ? prev.reduce((a, w) => a + w.total, 0) / prev.length : 0;
+  const elapsed = Math.min(1, (Date.now() - getSunday(new Date()).getTime()) / (7 * 864e5));
+  const pace = avgPrev * elapsed;
+  const delta = cur.total - pace;
+  const parts = keys.map(k => ({ name: k, value: cur.by[k] || 0, color: colorOf(k) }));
 
   return (
-    <div className="space-y-3 sm:space-y-6">
-      {/* Header */}
-      <div className="bg-white shadow rounded-lg p-4 sm:p-6 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-lg sm:text-2xl font-bold text-gray-800">Current Week</h2>
-          <p className="text-sm sm:text-base text-gray-500">
-            {parseDateLocal(report.week_start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} –{' '}
-            {parseDateLocal(report.week_end).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-          </p>
-        </div>
-        <p className="text-3xl sm:text-4xl font-bold text-gray-900 tabular-nums" title="Total hours">
-          {(report.totals.raw_hours_total || 0).toFixed(1)}h
-        </p>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-        {/* Section Distribution */}
-        {sectionChartData.length > 0 && (
-          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Section</p>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={sectionChartData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={95}
-                  paddingAngle={2}
-                >
-                  {sectionChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-                <Legend iconType="circle" iconSize={8} />
-              </PieChart>
-            </ResponsiveContainer>
+    <div className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+        <div className="space-y-3">
+          <div className="text-center pt-1 pb-2">
+            <div className="text-5xl font-bold tracking-tight num">
+              {h1(cur.total)}<small className="text-sm font-medium text-muted ml-0.5">h</small>
+            </div>
+            <div className="text-[13px] text-muted num mt-0.5">
+              {prev.length > 0 && (
+                <span className={delta < 0 ? 'text-warn' : 'text-good'} title={`vs ${prev.length}-week avg by now (${h1(pace)} h)`}>
+                  {delta < 0 ? '−' : '+'}{h1(Math.abs(delta))}
+                </span>
+              )}
+              {prev.length > 0 && ' · '}
+              {md(parseDateLocal(report.week_start))} – {md(parseDateLocal(report.week_end))}
+            </div>
+            <div className="max-w-[300px] mx-auto mt-3">
+              <SplitBar parts={parts} total={cur.total} />
+            </div>
           </div>
-        )}
+          <Ledger keys={keys} weeks={ledgerWeeks} current={cur} colorOf={colorOf} />
+        </div>
 
-        {/* Category Breakdown */}
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">By Category</p>
-          <table className="min-w-full">
-            <tbody className="divide-y divide-gray-50">
-              {categoryChartData.slice(0, 8).map((cat, idx) => (
-                <tr key={idx}>
-                  <td className="py-2.5 text-sm text-gray-700">{cat.name}</td>
-                  <td className="py-2.5 text-sm text-gray-400 text-right">{cat.rawHours}h</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="panel hidden lg:block px-3.5 py-3">
+          <div className="text-xs text-muted mb-1.5">Categories</div>
+          <CategoryBars summary={cur} colorOf={colorOf} />
         </div>
       </div>
 
-      {/* Weekly Trend */}
-      <WeeklyTrendChart />
+      <WeeklyTrendChart colorOf={colorOf} order={order} />
 
-      <WeekTimeGrid events={report.events} weekStart={report.week_start} />
+      <WeekTimeGrid events={report.events} hierarchy={report.section_hierarchy} colorOf={colorOf} />
     </div>
   );
 }
