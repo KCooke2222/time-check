@@ -1,7 +1,7 @@
 import { formatDateLocal } from './dateHelpers';
 
 // Charted sections get a colour each, in the order they first appear; "Other"
-// is everything else (unsectioned, uncharted sections, uncategorized).
+// is the categories with no section, as main computes it.
 const PALETTE = ['#3c6a8c', '#2f6b4f', '#8b5e83', '#4f7a7a', '#a0574a', '#5a6b3c', '#6b5a9c'];
 export const OTHER = 'Other';
 export const OTHER_COLOR = '#c39a45';
@@ -40,7 +40,7 @@ export function chartNames(hierarchy) {
   return names;
 }
 
-// One report -> { total, by: {key: hours}, cats: [...], uncat }
+// One report -> { total, by: {key: hours}, cats: [...] }
 export function summarize(report) {
   if (!report) return null;
   const keys = sectionKeys(report.section_hierarchy);
@@ -53,23 +53,23 @@ export function summarize(report) {
     }
   };
   walk(report.section_hierarchy);
-  const charted = Object.values(by).reduce((a, b) => a + b, 0);
-  by[OTHER] = Math.max(0, total - charted);
+  by[OTHER] = Object.values(report.category_summary || {})
+    .filter(c => !c.section_id)
+    .reduce((sum, c) => sum + (c.raw_hours_total || 0), 0);
 
   const cats = Object.entries(report.category_summary || {})
     .map(([id, c]) => ({
       id,
       name: c.name,
       section: c.section_name || null,
-      key: (c.section_id != null && keys[c.section_id]) || OTHER,
+      key: c.section_id ? keys[c.section_id] || null : OTHER,
       hours: c.raw_hours_total || 0,
       weeks: c.weeks_present || 0,
       avg: c.raw_hours_avg || 0,
     }))
     .filter(c => c.hours > 0)
     .sort((a, b) => b.hours - a.hours);
-  const catTotal = cats.reduce((a, c) => a + c.hours, 0);
-  return { total, by, cats, uncat: Math.max(0, total - catTotal) };
+  return { total, by, cats };
 }
 
 export const h1 = (v) => (Math.round((v || 0) * 10) / 10).toFixed(1).replace(/\.0$/, '');

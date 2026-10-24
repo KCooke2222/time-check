@@ -105,7 +105,7 @@ function WeekTimeGrid({ events: initialEvents, hierarchy: initialHierarchy, colo
                   const top = Math.max(0, (event.startH - HOUR_START) * PX_PER_HOUR);
                   const height = (Math.min(event.endH, HOUR_END) - Math.max(event.startH, HOUR_START)) * PX_PER_HOUR - 1;
                   const categorized = event.category_id && event.category_name !== 'Uncategorized';
-                  const key = categorized ? (event.section_id != null && keys[event.section_id]) || OTHER : null;
+                  const key = categorized ? (event.section_id != null ? keys[event.section_id] || null : OTHER) : null;
                   const bg = key ? colorOf(key) : NONE_COLOR;
                   return (
                     <div key={i}

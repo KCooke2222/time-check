@@ -1,4 +1,4 @@
-import { h1, OTHER, NONE_COLOR } from '../utils/ledger';
+import { h1, NONE_COLOR } from '../utils/ledger';
 
 export function Spark({ values, color, width = 90, height = 22 }) {
   const mx = Math.max(...values, 0) || 1;
@@ -45,7 +45,6 @@ export function Ledger({ keys, weeks, current, colorOf, showSub = true, nowLabel
       </div>
       {rows.map(r => {
         const subs = showSub && r.name !== 'total' ? (current?.cats || []).filter(c => c.key === r.name) : [];
-        const uncat = showSub && r.name === OTHER ? current?.uncat || 0 : 0;
         return (
           <div key={r.name}>
             <div className={`${cols} px-3.5 py-2.5 border-t border-line text-sm ${r.name === 'total' ? 'font-semibold' : ''}`}>
@@ -63,12 +62,6 @@ export function Ledger({ keys, weeks, current, colorOf, showSub = true, nowLabel
                 <span /><span className="num text-right">{h1(c.hours)}</span><span />
               </div>
             ))}
-            {uncat > 0.05 && (
-              <div className={`${cols} px-3.5 py-1.5 text-[13px] text-muted`}>
-                <span className="pl-4 italic">uncategorized</span>
-                <span /><span className="num text-right">{h1(uncat)}</span><span />
-              </div>
-            )}
           </div>
         );
       })}
@@ -79,36 +72,24 @@ export function Ledger({ keys, weeks, current, colorOf, showSub = true, nowLabel
 // Categories ranked by hours, bar against the largest.
 export function CategoryBars({ summary, colorOf, extra }) {
   const cats = summary?.cats || [];
-  const mx = Math.max(...cats.map(c => c.hours), summary?.uncat || 0, 0) || 1;
+  const mx = Math.max(...cats.map(c => c.hours), 0) || 1;
   const row = 'flex items-center gap-2 py-[7px] border-t border-line first:border-t-0 text-sm';
   return (
     <div>
       {cats.map(c => (
         <div key={c.id} className={row}>
-          <i className="dot" style={{ background: colorOf(c.key) }} />
+          <i className="dot" style={{ background: c.key ? colorOf(c.key) : NONE_COLOR }} />
           <span className="truncate">{c.name}</span>
           {c.section && <span className="text-xs text-muted truncate">{c.section}</span>}
           <span className="ml-auto flex items-center gap-2 flex-none">
             {extra?.(c)}
             <span className="w-[90px] h-1.5 rounded bg-soft overflow-hidden hidden sm:block">
-              <i className="block h-full" style={{ width: `${(c.hours / mx) * 100}%`, background: colorOf(c.key) }} />
+              <i className="block h-full" style={{ width: `${(c.hours / mx) * 100}%`, background: c.key ? colorOf(c.key) : NONE_COLOR }} />
             </span>
             <b className="num w-10 text-right">{h1(c.hours)}</b>
           </span>
         </div>
       ))}
-      {summary?.uncat > 0.05 && (
-        <div className={`${row} text-muted`}>
-          <i className="dot" style={{ background: NONE_COLOR }} />
-          uncategorized
-          <span className="ml-auto flex items-center gap-2">
-            <span className="w-[90px] h-1.5 rounded bg-soft overflow-hidden hidden sm:block">
-              <i className="block h-full" style={{ width: `${(summary.uncat / mx) * 100}%`, background: NONE_COLOR }} />
-            </span>
-            <span className="num w-10 text-right">{h1(summary.uncat)}</span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }

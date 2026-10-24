@@ -5,7 +5,7 @@ import { summarize, chartNames, lastWeeks, getSunday, h1, md, OTHER } from '../u
 import useColors from '../utils/useColors';
 import WeeklyTrendChart from './WeeklyTrendChart';
 import WeekTimeGrid from './WeekTimeGrid';
-import { Ledger, SplitBar, CategoryBars, Loading } from './LedgerParts';
+import { Ledger, SplitBar, Loading } from './LedgerParts';
 import { SYNCED_EVENT } from '../utils/syncEvents';
 import { MdSync } from 'react-icons/md';
 
@@ -89,33 +89,24 @@ function Dashboard() {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-3">
-          <div className="text-center pt-1 pb-2">
-            <div className="text-5xl font-bold tracking-tight num">
-              {h1(cur.total)}<small className="text-sm font-medium text-muted ml-0.5">h</small>
-            </div>
-            <div className="text-[13px] text-muted num mt-0.5">
-              {prev.length > 0 && (
-                <span className={delta < 0 ? 'text-warn' : 'text-good'} title={`vs ${prev.length}-week avg by now (${h1(pace)} h)`}>
-                  {delta < 0 ? '−' : '+'}{h1(Math.abs(delta))}
-                </span>
-              )}
-              {prev.length > 0 && ' · '}
-              {md(parseDateLocal(report.week_start))} – {md(parseDateLocal(report.week_end))}
-            </div>
-            <div className="max-w-[300px] mx-auto mt-3">
-              <SplitBar parts={parts} total={cur.total} />
-            </div>
-          </div>
-          <Ledger keys={keys} weeks={ledgerWeeks} current={cur} colorOf={colorOf} />
+      <div className="text-center pt-1 pb-2">
+        <div className="text-5xl font-bold tracking-tight num">
+          {h1(cur.total)}<small className="text-sm font-medium text-muted ml-0.5">h</small>
         </div>
-
-        <div className="panel hidden lg:block px-3.5 py-3">
-          <div className="text-xs text-muted mb-1.5">Categories</div>
-          <CategoryBars summary={cur} colorOf={colorOf} />
+        <div className="text-[13px] text-muted num mt-0.5">
+          {prev.length > 0 && (
+            <span className={delta < 0 ? 'text-warn' : 'text-good'} title={`vs ${prev.length}-week avg by now (${h1(pace)} h)`}>
+              {delta < 0 ? '−' : '+'}{h1(Math.abs(delta))}
+            </span>
+          )}
+          {prev.length > 0 && ' · '}
+          {md(parseDateLocal(report.week_start))} – {md(parseDateLocal(report.week_end))}
+        </div>
+        <div className="max-w-[300px] mx-auto mt-3">
+          <SplitBar parts={parts} total={cur.total} />
         </div>
       </div>
+      <Ledger keys={keys} weeks={ledgerWeeks} current={cur} colorOf={colorOf} />
 
       <WeeklyTrendChart colorOf={colorOf} order={order} />
 
