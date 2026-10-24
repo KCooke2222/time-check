@@ -21,9 +21,9 @@ import {
 
 function TagBubble({ tag, onRemove }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-sm text-blue-800">
+    <span className="inline-flex items-center gap-1 rounded-[7px] bg-soft px-2 py-0.5 text-[13px] text-ink">
       {tag}
-      <button onClick={() => onRemove(tag)} className="hover:text-blue-900" title="Remove tag">
+      <button onClick={() => onRemove(tag)} className="text-muted hover:text-warn" title="Remove tag">
         ×
       </button>
     </span>
@@ -540,52 +540,52 @@ function CategoryTree() {
   };
 
   if (isLoading) {
-    return <div className="py-8 text-center text-gray-500">Loading...</div>;
+    return <div className="py-8 text-center text-muted">…</div>;
   }
 
   if (!treeItems || !dataProviderRef.current) {
-    return <div className="py-8 text-center text-gray-500">No tree data</div>;
+    return <div className="py-8 text-center text-muted">—</div>;
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-      <div className="lg:col-span-2">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
+      <div>
         {errorMessage && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-red-800">{errorMessage}</div>
+          <div className="mb-2 text-sm text-warn">{errorMessage}</div>
         )}
 
-        <div className="rounded-lg border border-gray-200 bg-white">
-          <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 p-3">
+        <div>
+          <div className="flex items-center gap-1.5 pb-2 border-b border-line">
             <button
               onClick={() => createTreeItem('section')}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-600 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-soft px-2.5 py-1 text-muted hover:text-ink"
               title="New folder"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M10 4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6z" />
               </svg>
-              <span className="text-sm font-medium">Folder</span>
+              <span className="text-[13px]">Folder</span>
             </button>
 
             <button
               onClick={() => createTreeItem('category')}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-gray-600 hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-soft px-2.5 py-1 text-muted hover:text-ink"
               title="New category"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M20 4H4a2 2 0 0 0-2 2v4h20V6a2 2 0 0 0-2-2zm0 8H2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6z" />
               </svg>
-              <span className="text-sm font-medium">Category</span>
+              <span className="text-[13px]">Category</span>
             </button>
           </div>
 
           <div
-            className="p-4"
+            className="pt-2"
             style={{ minHeight: '200px' }}
             onClick={handleTreeAreaClick}
           >
             {treeItems[ROOT_ID].children.length === 0 ? (
-              <p className="py-12 text-center text-gray-400">No categories yet</p>
+              <p className="py-12 text-center text-muted">—</p>
             ) : (
               <UncontrolledTreeEnvironment
                 ref={environmentRef}
@@ -664,8 +664,8 @@ function CategoryTree() {
                             title={showInCharts ? 'Remove from charts' : 'Show in charts'}
                           >
                             {showInCharts
-                              ? <IoStar size={13} className="text-yellow-400" />
-                              : <IoStarOutline size={13} className="text-gray-300 hover:text-yellow-300" />
+                              ? <IoStar size={13} className="text-[#c39a45]" />
+                              : <IoStarOutline size={13} className="text-line hover:text-[#c39a45]" />
                             }
                           </span>
                         )}
@@ -686,7 +686,7 @@ function CategoryTree() {
                                   setPendingDeleteId(item.index);
                                 }
                               }}
-                              className="rounded-lg p-1 text-red-500 hover:bg-red-50"
+                              className="rounded-lg p-1 text-warn hover:bg-soft"
                               title="Delete"
                               aria-label="Delete"
                             >
@@ -697,13 +697,13 @@ function CategoryTree() {
 
                             {pendingDeleteId === item.index && (
                               <div
-                                className="absolute right-0 top-full z-10 mt-1 flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2 shadow-lg"
+                                className="absolute right-0 top-full z-10 mt-1 flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 shadow-lg"
                                 onClick={(event) => event.stopPropagation()}
                               >
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="text-xs text-red-500 hover:text-red-700 cursor-pointer"
+                                  className="text-xs text-warn hover:underline cursor-pointer"
                                   onClick={() => handleDelete(item.index)}
                                   onKeyDown={(e) => { if (e.key === 'Enter') handleDelete(item.index); }}
                                 >
@@ -712,7 +712,7 @@ function CategoryTree() {
                                 <span
                                   role="button"
                                   tabIndex={0}
-                                  className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  className="text-xs text-muted hover:text-ink cursor-pointer"
                                   onClick={() => setPendingDeleteId(null)}
                                   onKeyDown={(e) => { if (e.key === 'Enter') setPendingDeleteId(null); }}
                                 >
@@ -747,7 +747,7 @@ function CategoryTree() {
                           {...inputProps}
                           ref={inputRef}
                           onBlur={handleBlur}
-                          className="rounded border border-blue-300 px-1 py-0.5 text-sm focus:outline-none"
+                          className="rounded border border-line bg-panel px-1 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-ink/20"
                         />
                       </form>
                     );
@@ -759,11 +759,11 @@ function CategoryTree() {
         </div>
       </div>
 
-      <div className="col-span-1">
-        <div className="sticky top-4 rounded-lg border border-gray-200 bg-white p-4">
+      <div>
+        <div className="lg:sticky lg:top-16 rounded-[10px] bg-oat/60 p-3 min-h-[60px]">
           {showTagPanel ? (
             <>
-              <h3 className="mb-4 font-semibold text-gray-900">Tags</h3>
+              <div className="mb-2 text-xs text-muted">{selectedItem?.data}</div>
 
               <div className="mb-3 flex flex-wrap gap-2">
                 {tags.map((tag) => (
@@ -782,12 +782,12 @@ function CategoryTree() {
                       handleAddTag();
                     }
                   }}
-                  placeholder="Add tag..."
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="tag"
+                  className="field flex-1"
                 />
                 <button
                   onClick={handleAddTag}
-                  className="rounded-lg bg-blue-500 px-3 py-2 text-white hover:bg-blue-600"
+                  className="rounded-lg bg-ink px-3 py-2 text-white hover:bg-ink/90"
                   title="Add tag"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -796,15 +796,10 @@ function CategoryTree() {
                 </button>
               </div>
 
-              <p className="mt-2 text-xs text-gray-500">
-                Tags are matched against calendar event titles
-              </p>
+
             </>
           ) : (
-            <div className="py-12 text-center text-gray-400">
-              <p className="mb-2">Select a category</p>
-              <p className="text-sm">to edit tags</p>
-            </div>
+            <div className="py-3 text-center text-muted text-xs" title="Select a category to edit its tags">tags</div>
           )}
         </div>
       </div>
