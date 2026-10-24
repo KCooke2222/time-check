@@ -96,3 +96,6 @@ code {
   font-size: 14px;
   color: rgb(var(--ink));
 }
+
+/* No scrollbars; scrolling still works. */
+*{scrollbar-width:none}*::-webkit-scrollbar{display:none}
